@@ -5,13 +5,15 @@ import pandas as pd
 
 from backend.database import SessionLocal
 from backend import models
+from backend.engine import calculate_projection
+from backend.alert_engine import run_alert_engine
 
 
 router = APIRouter(prefix="/api", tags=["Ingestion"])
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-# DB Dependency
+# ---------------- DB Dependency ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -20,6 +22,7 @@ def get_db():
         db.close()
 
 
+# ---------------- INGEST CSV ----------------
 @router.post("/ingest")
 async def ingest_csv(
     request: Request,
@@ -86,7 +89,25 @@ async def ingest_csv(
 
     db.commit()
 
-    # -------- PREVIEW LOGIC --------
+    # ---------------- RUN ALERT ENGINE ----------------
+
+    items = db.query(models.Item).all()
+
+    for item in items:
+
+        demands = db.query(models.Demand).filter(
+            models.Demand.item_id == item.id
+        ).all()
+
+        supplies = db.query(models.Supply).filter(
+            models.Supply.item_id == item.id
+        ).all()
+
+        projection = calculate_projection(item, demands, supplies)
+
+        run_alert_engine(db, item, projection)
+
+    # ---------------- PREVIEW ----------------
     preview = df.head(5)
     preview_data = preview.to_dict(orient="records")
 

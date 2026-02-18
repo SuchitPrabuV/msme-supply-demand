@@ -27,6 +27,34 @@ class Item(Base):
     supply_orders = relationship("SupplyOrder", back_populates="item")
     production_runs = relationship("ProductionRun", back_populates="item")
     alerts = relationship("Alert", back_populates="item")
+    demands = relationship("Demand", back_populates="item")
+    supplies = relationship("Supply", back_populates="item")
+    
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
+from sqlalchemy.orm import relationship
+from datetime import date
+
+
+class Demand(Base):
+    __tablename__ = "demands"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, ForeignKey("items.id"))
+    quantity = Column(Integer, nullable=False)
+    demand_date = Column(Date, default=date.today)
+
+    item = relationship("Item", back_populates="demands")
+
+
+class Supply(Base):
+    __tablename__ = "supplies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, ForeignKey("items.id"))
+    quantity = Column(Integer, nullable=False)
+    supply_date = Column(Date, default=date.today)
+
+    item = relationship("Item", back_populates="supplies")
 
 
 # -----------------------------

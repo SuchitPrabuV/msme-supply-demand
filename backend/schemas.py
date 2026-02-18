@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date
 
 
 # -------- ITEM CREATE --------
@@ -20,3 +21,28 @@ class ItemResponse(ItemCreate):
 
     class Config:
         from_attributes = True
+
+class DemandCreate(BaseModel):
+    item_id: int
+    quantity: int
+    demand_date: date
+
+
+class DemandResponse(DemandCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class SupplyCreate(BaseModel):
+    item_id: int
+    quantity: int
+    supply_date: date
+
+
+class SupplyResponse(SupplyCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
+
