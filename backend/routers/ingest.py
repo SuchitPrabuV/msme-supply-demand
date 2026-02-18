@@ -1,11 +1,14 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Request
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import pandas as pd
 
 from backend.database import SessionLocal
 from backend import models
 
+
 router = APIRouter(prefix="/api", tags=["Ingestion"])
+templates = Jinja2Templates(directory="frontend/templates")
 
 
 # DB Dependency
@@ -18,15 +21,22 @@ def get_db():
 
 
 @router.post("/ingest")
-async def ingest_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-
+async def ingest_csv(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     try:
-        # Read CSV into Pandas
         df = pd.read_csv(file.file)
 
-        # Normalize headers: strip whitespace, lower case, replace spaces with underscores
-        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('__', '_')
-        
+        # Normalize headers
+        df.columns = (
+            df.columns.str.strip()
+            .str.lower()
+            .str.replace(' ', '_')
+            .str.replace('__', '_')
+        )
+
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid CSV file")
 
@@ -38,7 +48,7 @@ async def ingest_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
         "selling_price"
     ]
 
-    # Validate columns
+    # Validate required columns
     for col in required_columns:
         if col not in df.columns:
             raise HTTPException(
@@ -50,17 +60,15 @@ async def ingest_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
     for _, row in df.iterrows():
 
-        # Basic cleaning
         safety_stock = row.get("safety_stock", 0)
         min_order_qty = row.get("min_order_qty", 1)
 
-        # Check if SKU already exists
         existing_item = db.query(models.Item).filter(
             models.Item.sku == row["sku"]
         ).first()
 
         if existing_item:
-            continue  # Skip duplicates
+            continue
 
         new_item = models.Item(
             sku=row["sku"],
@@ -78,7 +86,15 @@ async def ingest_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
     db.commit()
 
-    return {
-        "message": "File processed successfully",
-        "rows_inserted": inserted_count
-    }
+    # -------- PREVIEW LOGIC --------
+    preview = df.head(5)
+    preview_data = preview.to_dict(orient="records")
+
+    return templates.TemplateResponse(
+        "upload.html",
+        {
+            "request": request,
+            "preview_data": preview_data,
+            "message": f"File processed successfully! {inserted_count} rows inserted."
+        }
+    )
