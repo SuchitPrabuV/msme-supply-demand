@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Upload Data</h2>
+<hr>
+
+<form action="/api/ingest" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label class="form-label">Select CSV File</label>
+        <input type="file" name="file" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Upload File
+    </button>
+</form>
+
+<hr>
+
+<!-- Result Section -->
+<div class="mt-4">
+    <h5>Upload Status</h5>
+
+    {% if message %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endif %}
+</div>
+
+{% if preview_data %}
+<h5 class="mt-4">Data Preview</h5>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            {% for column in preview_data[0].keys() %}
+                <th>{{ column }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in preview_data %}
+        <tr>
+            {% for value in row.values() %}
+                <td>{{ value }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+
+{% endblock %}
+
+
+
