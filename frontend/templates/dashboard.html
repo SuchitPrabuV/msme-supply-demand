@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block content %}
 
 <div class="container mt-4">
@@ -48,6 +47,12 @@
 
     <h4 class="mt-4">Inventory Status Overview</h4>
 
+    <!-- 🔽 Day 10 Scenario Toggle -->
+    <div class="mb-3">
+        <button class="btn btn-primary" onclick="loadReal()">Real Scenario</button>
+        <button class="btn btn-warning ms-2" onclick="loadSimulated()">Simulate Demand x2</button>
+    </div>
+
     <div class="mt-3">
         <canvas
             id="statusChart"
@@ -57,81 +62,23 @@
         ></canvas>
     </div>
 
+    <hr class="mt-5">
+
+    <!-- Active Alerts -->
+    <h4>Active Alerts</h4>
+    <div id="alertsContainer" class="mt-3"></div>
+
+    <hr class="mt-5">
+
+    <!-- Recommendations -->
+    <h4>Recommendations</h4>
+    <div id="recommendationsContainer" class="mt-3"></div>
+
 </div>
 
-<hr class="mt-5">
-<h4>Active Alerts</h4>
-<div id="alertsContainer"></div>
-
-<script>
-fetch("/api/alerts")
-    .then(res => res.json())
-    .then(data => {
-
-        const container = document.getElementById("alertsContainer");
-        container.innerHTML = "";
-
-        if (data.length === 0) {
-            container.innerHTML = "<p>No active alerts.</p>";
-            return;
-        }
-
-        data.forEach(alert => {
-
-            let alertClass = "alert-success";
-
-            if (alert.severity === "RED") {
-                alertClass = "alert-danger";
-            } else if (alert.severity === "YELLOW") {
-                alertClass = "alert-warning";
-            }
-
-            container.innerHTML += `
-                <div class="alert ${alertClass}">
-                    <strong>${alert.type}</strong> - ${alert.message}
-                </div>
-            `;
-        });
-    });
-</script>
-
-
-<!-- Chart Script -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const ctx = document.getElementById("statusChart");
-    const critical = Number(ctx.dataset.critical || 0);
-    const warning = Number(ctx.dataset.warning || 0);
-    const healthy = Number(ctx.dataset.healthy || 0);
-
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Critical", "Warning", "Healthy"],
-            datasets: [{
-                label: "Item Status Distribution",
-                data: [critical, warning, healthy]
-                 }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-});
-</script>
-
-<hr class="mt-5">
-<h4>Active Alerts</h4>
-
-<div id="alertsContainer" class="mt-3"></div>
-
+<!-- ========================= -->
+<!-- ALERT SCRIPT -->
+<!-- ========================= -->
 <script>
 fetch("/api/alerts")
     .then(res => res.json())
@@ -174,5 +121,100 @@ function resolveAlert(id) {
 }
 </script>
 
+<!-- ========================= -->
+<!-- RECOMMENDATION SCRIPT -->
+<!-- ========================= -->
+<script>
+fetch("/api/recommendations")
+    .then(res => res.json())
+    .then(data => {
+
+        const container = document.getElementById("recommendationsContainer");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No recommendations.</p>";
+            return;
+        }
+
+        data.forEach(rec => {
+
+            container.innerHTML += `
+                <div class="alert alert-info">
+                    <strong>${rec.item_name}</strong> - Recommended order: ${rec.recommended_qty} units
+                    <button class="btn btn-sm btn-success float-end ms-2"
+                        onclick="approveRec(${rec.id})">
+                        Approve
+                    </button>
+                    <button class="btn btn-sm btn-danger float-end"
+                        onclick="rejectRec(${rec.id})">
+                        Reject
+                    </button>
+                </div>
+            `;
+        });
+    });
+
+function approveRec(id) {
+    fetch(`/api/recommendations/${id}/approve`, {
+        method: "POST"
+    }).then(() => location.reload());
+}
+
+function rejectRec(id) {
+    fetch(`/api/recommendations/${id}/reject`, {
+        method: "POST"
+    }).then(() => location.reload());
+}
+</script>
+
+<!-- ========================= -->
+<!-- CHART SCRIPT -->
+<!-- ========================= -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const ctx = document.getElementById("statusChart");
+    const critical = Number(ctx.dataset.critical || 0);
+    const warning = Number(ctx.dataset.warning || 0);
+    const healthy = Number(ctx.dataset.healthy || 0);
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Critical", "Warning", "Healthy"],
+            datasets: [{
+                label: "Item Status Distribution",
+                data: [critical, warning, healthy]
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+});
+</script>
+
+<!-- ========================= -->
+<!-- DAY 10 SIMULATION SCRIPT -->
+<!-- ========================= -->
+<script>
+function loadReal() {
+    location.reload();
+}
+
+function loadSimulated() {
+    fetch("/api/simulate/1?demand_multiplier=2")
+        .then(res => res.json())
+        .then(data => {
+            console.log("Simulated Data:", data);
+            alert("Simulation loaded. Check console for result.");
+        });
+}
+</script>
 
 {% endblock %}

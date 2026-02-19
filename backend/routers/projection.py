@@ -40,7 +40,10 @@ def get_projection(item_id: int, db: Session = Depends(get_db)):
     # Run alert engine (optional if already running in ingestion)
     #run_alert_engine(db, item, projection)
 
-    recommendation = generate_recommendation(item, projection)
+    from backend.recommendation_engine import generate_recommendation
+
+    recommendation = generate_recommendation(db, item, projection)
+
 
     # Build daily view
     demand_by_date = {}

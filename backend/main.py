@@ -14,6 +14,10 @@ from backend.routers.alerts import router as alerts_router
 from backend.routers.dashboard import router as dashboard_router
 from backend.routers.suppliers import router as suppliers_router
 
+from backend.routers.recommendations import router as recommendations_router
+
+from backend.routers.simulation import router as simulation_router
+
 
 # ✅ FIRST create app
 app = FastAPI(title="MSME Supply Demand Control Tower")
@@ -34,6 +38,9 @@ app.include_router(projection_router)
 app.include_router(alerts_router)
 app.include_router(dashboard_router)
 app.include_router(suppliers_router)
+app.include_router(recommendations_router)
+app.include_router(simulation_router)
+
 
 
 

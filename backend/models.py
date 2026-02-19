@@ -141,3 +141,20 @@ class Alert(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     item = relationship("Item", back_populates="alerts")
+
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
+
+
+class Recommendation(Base):
+    __tablename__ = "recommendations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, ForeignKey("items.id"))
+    recommended_qty = Column(Integer)
+    status = Column(String, default="PENDING")  # PENDING / APPROVED / REJECTED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    item = relationship("Item")
+
