@@ -6,6 +6,7 @@ from backend.engine import calculate_projection
 
 router = APIRouter(prefix="/api", tags=["Projection"])
 
+from backend.alert_engine import run_alert_engine
 
 def get_db():
     db = SessionLocal()
@@ -31,6 +32,7 @@ def get_projection(item_id: int, db: Session = Depends(get_db)):
     ).all()
 
     projection = calculate_projection(item, demands, supplies)
+    run_alert_engine(db, item, projection)
 
     demand_by_date = {}
     for demand in demands:

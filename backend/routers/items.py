@@ -40,3 +40,21 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
 def get_items(db: Session = Depends(get_db)):
     items = db.query(models.Item).all()
     return items
+
+@router.get("/{item_id}/update-stock")
+def update_stock(
+    item_id: int,
+    current_stock: int,
+    safety_stock: int,
+    db: Session = Depends(get_db)
+):
+    item = db.query(models.Item).filter(models.Item.id == item_id).first()
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    item.current_stock = current_stock
+    item.safety_stock = safety_stock
+    db.commit()
+
+    return {"message": "Stock updated successfully"}

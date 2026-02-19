@@ -59,6 +59,43 @@
 
 </div>
 
+<hr class="mt-5">
+<h4>Active Alerts</h4>
+<div id="alertsContainer"></div>
+
+<script>
+fetch("/api/alerts")
+    .then(res => res.json())
+    .then(data => {
+
+        const container = document.getElementById("alertsContainer");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No active alerts.</p>";
+            return;
+        }
+
+        data.forEach(alert => {
+
+            let alertClass = "alert-success";
+
+            if (alert.severity === "RED") {
+                alertClass = "alert-danger";
+            } else if (alert.severity === "YELLOW") {
+                alertClass = "alert-warning";
+            }
+
+            container.innerHTML += `
+                <div class="alert ${alertClass}">
+                    <strong>${alert.type}</strong> - ${alert.message}
+                </div>
+            `;
+        });
+    });
+</script>
+
+
 <!-- Chart Script -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -89,5 +126,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
+
+<hr class="mt-5">
+<h4>Active Alerts</h4>
+
+<div id="alertsContainer" class="mt-3"></div>
+
+<script>
+fetch("/api/alerts")
+    .then(res => res.json())
+    .then(data => {
+
+        const container = document.getElementById("alertsContainer");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No active alerts.</p>";
+            return;
+        }
+
+        data.forEach(alert => {
+
+            let alertClass = "alert-success";
+
+            if (alert.severity === "RED") {
+                alertClass = "alert-danger";
+            } else if (alert.severity === "YELLOW") {
+                alertClass = "alert-warning";
+            }
+
+            container.innerHTML += `
+                <div class="alert ${alertClass}">
+                    <strong>${alert.type}</strong> - ${alert.message}
+                    <button class="btn btn-sm btn-dark float-end"
+                        onclick="resolveAlert(${alert.id})">
+                        Resolve
+                    </button>
+                </div>
+            `;
+        });
+    });
+
+function resolveAlert(id) {
+    fetch(`/api/alerts/${id}/resolve`, {
+        method: "POST"
+    }).then(() => location.reload());
+}
+</script>
+
 
 {% endblock %}
