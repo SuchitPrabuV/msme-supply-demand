@@ -60,7 +60,8 @@ def dashboard(request: Request):
             "request": request,
             "critical": critical,
             "warning": warning,
-            "healthy": healthy
+            "healthy": healthy,
+            "items": items,
         }
     )
 
@@ -70,4 +71,23 @@ def upload_page(request: Request):
     return templates.TemplateResponse(
         "upload.html",
         {"request": request, "preview_data": None}
+    )
+
+
+@app.get("/items-view", response_class=HTMLResponse)
+def items_view(request: Request):
+    db = SessionLocal()
+    items = db.query(Item).all()
+    db.close()
+    return templates.TemplateResponse(
+        "items.html",
+        {"request": request, "items": items}
+    )
+
+
+@app.get("/items/{item_id}", response_class=HTMLResponse)
+def item_detail(request: Request, item_id: int):
+    return templates.TemplateResponse(
+        "item_detail.html",
+        {"request": request, "item_id": item_id}
     )

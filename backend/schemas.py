@@ -46,3 +46,16 @@ class SupplyResponse(SupplyCreate):
     class Config:
         from_attributes = True
 
+
+class AlertResponse(BaseModel):
+    id: int
+    item_id: int
+    type: str
+    message: str
+    severity: str
+    status: str
+    resolution_note: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+

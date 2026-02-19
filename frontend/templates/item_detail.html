@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+    <h3>Item Detail</h3>
+
+    <!-- Loading Message -->
+    <div id="loading" class="text-center text-muted mb-3">
+        Loading projection data...
+    </div>
+
+    <!-- Static Info Card -->
+    <div class="card mb-4 d-none" id="itemCard">
+        <div class="card-body">
+            <p><strong>SKU:</strong> <span id="sku"></span></p>
+            <p><strong>Name:</strong> <span id="name"></span></p>
+            <p><strong>Current Stock:</strong> <span id="current_stock"></span></p>
+            <p><strong>Safety Stock:</strong> <span id="safety_stock"></span></p>
+        </div>
+    </div>
+
+    <!-- Projection Table -->
+    <div id="projectionSection" class="d-none">
+        <h5>7-Day Projection</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Demand</th>
+                    <th>Supply</th>
+                    <th>Projected Stock</th>
+                </tr>
+            </thead>
+            <tbody id="projection_table"></tbody>
+        </table>
+
+        <!-- Chart -->
+        <canvas id="projectionChart" height="100"></canvas>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const itemId = "{{ item_id }}";
+    const loadingElement = document.getElementById("loading");
+    const itemCard = document.getElementById("itemCard");
+    const projectionSection = document.getElementById("projectionSection");
+
+    fetch(`/api/projections/${itemId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Item not found");
+            }
+            return response.json();
+        })
+        .then(data => {
+
+            if (!data || !data.item || !Array.isArray(data.projections)) {
+                throw new Error("Invalid API response");
+            }
+
+            // Hide loading
+            loadingElement.style.display = "none";
+
+            // Show sections
+            itemCard.classList.remove("d-none");
+            projectionSection.classList.remove("d-none");
+
+            // Fill Static Info
+            document.getElementById("sku").innerText = data.item.sku;
+            document.getElementById("name").innerText = data.item.name;
+            document.getElementById("current_stock").innerText = data.item.current_stock;
+            document.getElementById("safety_stock").innerText = data.item.safety_stock;
+
+            // Reset Table
+            const table = document.getElementById("projection_table");
+            table.innerHTML = "";
+
+            data.projections.forEach(row => {
+                const isShortage = row.projected_stock < data.item.safety_stock;
+
+                table.innerHTML += `
+                    <tr>
+                        <td>${row.date}</td>
+                        <td>${row.demand}</td>
+                        <td>${row.supply}</td>
+                        <td class="${isShortage ? 'text-danger fw-bold' : ''}">
+                            ${row.projected_stock}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Chart Data
+            const labels = data.projections.map(p => p.date);
+            const stockData = data.projections.map(p => p.projected_stock);
+            const safetyLine = new Array(labels.length).fill(data.item.safety_stock);
+
+            // Destroy previous instance if exists
+            if (window.projectionChartInstance) {
+                window.projectionChartInstance.destroy();
+            }
+
+            // Create Chart
+            window.projectionChartInstance = new Chart(
+                document.getElementById("projectionChart"),
+                {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "Projected Stock",
+                                data: stockData,
+                                borderColor: "blue",
+                                fill: false,
+                                tension: 0.3
+                            },
+                            {
+                                label: "Safety Stock",
+                                data: safetyLine,
+                                borderColor: "red",
+                                borderDash: [5, 5],
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: "Stock Level"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+        })
+        .catch(error => {
+            loadingElement.innerText = error.message || "Failed to load projection data.";
+            console.error("Projection Error:", error);
+        });
+
+});
+</script>
+
+{% endblock %}

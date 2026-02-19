@@ -1,0 +1,21 @@
+﻿sku,name,category,cost_price,selling_price,current_stock,safety_stock,min_order_qty
+ITEM600,Steel Bolts M8,Hardware,2.5,4.5,180,60,100
+ITEM601,Aluminium Sheets 2mm,Raw Material,120.0,165.0,45,30,20
+ITEM602,Copper Wire 1.5mm,Electrical,55.0,79.0,20,25,15
+ITEM603,PVC Pipe 1in,Plumbing,18.0,29.0,140,50,40
+ITEM604,Industrial Bearing 6204,Mechanical,35.0,58.0,12,20,10
+ITEM605,Packaging Box Small,Packaging,6.0,11.0,320,120,100
+ITEM606,Packaging Tape 2in,Packaging,1.8,3.5,260,90,60
+ITEM607,Machine Oil 1L,Maintenance,9.0,16.0,34,25,20
+ITEM608,Safety Gloves Pair,Safety,3.2,6.0,95,40,30
+ITEM609,Welding Rod 3.15mm,Fabrication,22.0,34.0,70,45,25
+ITEM610,MS Angle 25x25,Metal,48.0,72.0,16,20,12
+ITEM611,Paint Primer 4L,Finishing,40.0,62.0,27,18,10
+ITEM612,Fastener Kit A,Hardware,14.0,24.0,110,50,30
+ITEM613,Rubber Gasket Set,Mechanical,11.0,19.0,58,35,20
+ITEM614,Circuit Breaker 16A,Electrical,85.0,120.0,9,15,8
+ITEM615,LED Indicator 24V,Electrical,12.0,20.0,66,25,20
+ITEM616,Wooden Pallet,Logistics,42.0,65.0,22,15,10
+ITEM617,Cardboard Divider,Packaging,2.2,4.0,210,80,50
+ITEM618,Hex Nut M10,Hardware,1.1,2.1,500,200,150
+ITEM619,Hex Bolt M10x40,Hardware,1.6,2.9,430,180,120

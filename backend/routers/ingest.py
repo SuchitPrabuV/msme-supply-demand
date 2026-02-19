@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import pandas as pd
+import os
 
 from backend.database import SessionLocal
 from backend import models
@@ -10,7 +11,8 @@ from backend.alert_engine import run_alert_engine
 
 
 router = APIRouter(prefix="/api", tags=["Ingestion"])
-templates = Jinja2Templates(directory="frontend/templates")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "frontend", "templates"))
 
 
 # ---------------- DB Dependency ----------------

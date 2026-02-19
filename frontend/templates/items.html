@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Items</h2>
+<hr>
+
+{% if items %}
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Current Stock</th>
+                <th>Safety Stock</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.current_stock }}</td>
+                <td>{{ item.safety_stock }}</td>
+                <td>
+                    <a href="/items/{{ item.id }}" class="btn btn-sm btn-primary">View Projection</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No items found. Upload CSV data first.</div>
+{% endif %}
+
+{% endblock %}

@@ -32,8 +32,35 @@ def get_projection(item_id: int, db: Session = Depends(get_db)):
 
     projection = calculate_projection(item, demands, supplies)
 
+    demand_by_date = {}
+    for demand in demands:
+        key = demand.demand_date.isoformat()
+        demand_by_date[key] = demand_by_date.get(key, 0) + demand.quantity
+
+    supply_by_date = {}
+    for supply in supplies:
+        key = supply.supply_date.isoformat()
+        supply_by_date[key] = supply_by_date.get(key, 0) + supply.quantity
+
+    projections = []
+    for day in projection:
+        day_key = day["date"]
+        projections.append(
+            {
+                "date": day_key,
+                "demand": demand_by_date.get(day_key, 0),
+                "supply": supply_by_date.get(day_key, 0),
+                "projected_stock": day["projected_stock"],
+            }
+        )
+
     return {
-        "item_id": item_id,
-        "current_stock": item.current_stock,
-        "timeline": projection
+        "item": {
+            "id": item.id,
+            "sku": item.sku,
+            "name": item.name,
+            "current_stock": item.current_stock,
+            "safety_stock": item.safety_stock,
+        },
+        "projections": projections,
     }
