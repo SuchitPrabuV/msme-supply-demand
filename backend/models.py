@@ -57,6 +57,8 @@ class Supply(Base):
     item = relationship("Item", back_populates="supplies")
 
 
+
+
 # -----------------------------
 # SUPPLIERS TABLE
 # -----------------------------

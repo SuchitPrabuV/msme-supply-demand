@@ -11,6 +11,8 @@ import os
 from backend.routers.flows import router as flows_router
 from backend.routers.projection import router as projection_router
 from backend.routers.alerts import router as alerts_router
+from backend.routers.dashboard import router as dashboard_router
+from backend.routers.suppliers import router as suppliers_router
 
 
 # ✅ FIRST create app
@@ -30,6 +32,8 @@ app.include_router(ingest_router)
 app.include_router(flows_router)
 app.include_router(projection_router)
 app.include_router(alerts_router)
+app.include_router(dashboard_router)
+app.include_router(suppliers_router)
 
 
 

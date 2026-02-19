@@ -41,6 +41,7 @@ def get_demands(item_id: int, db: Session = Depends(get_db)):
 
 @router.post("/supplies/", response_model=schemas.SupplyResponse)
 def create_supply(supply: schemas.SupplyCreate, db: Session = Depends(get_db)):
+
     item = db.query(models.Item).filter(models.Item.id == supply.item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -51,8 +52,3 @@ def create_supply(supply: schemas.SupplyCreate, db: Session = Depends(get_db)):
     db.refresh(db_supply)
 
     return db_supply
-
-
-@router.get("/supplies/{item_id}", response_model=List[schemas.SupplyResponse])
-def get_supplies(item_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Supply).filter(models.Supply.item_id == item_id).all()

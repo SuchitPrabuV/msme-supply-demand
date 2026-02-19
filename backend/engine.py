@@ -1,28 +1,40 @@
-from datetime import date, timedelta
+from datetime import timedelta, date
 
-def calculate_projection(item, demands, supplies, days=7):
-    today = date.today()
-    stock = item.current_stock
-    timeline = []
 
-    for i in range(days):
-        current_day = today + timedelta(days=i)
+def calculate_projection(item, demands, supplies):
 
-        daily_demand = sum(
-            d.quantity for d in demands
-            if d.demand_date == current_day
-        )
+    today = min((d.demand_date for d in demands), default=None)
 
-        daily_supply = sum(
-            s.quantity for s in supplies
-            if s.supply_date == current_day
-        )
+    if not today:
+        today = min((s.supply_date for s in supplies), default=None)
 
-        stock = stock - daily_demand + daily_supply
+    if not today:
+        today = date.today()
 
-        timeline.append({
-            "date": current_day.isoformat(),
-            "projected_stock": stock
+    projection = []
+    current_stock = item.current_stock
+
+    demand_by_date = {}
+    for demand in demands:
+        key = demand.demand_date
+        demand_by_date[key] = demand_by_date.get(key, 0) + demand.quantity
+
+    supply_by_date = {}
+    for supply in supplies:
+        key = supply.supply_date
+        supply_by_date[key] = supply_by_date.get(key, 0) + supply.quantity
+
+    for i in range(7):
+        day = today + timedelta(days=i)
+
+        demand_qty = demand_by_date.get(day, 0)
+        supply_qty = supply_by_date.get(day, 0)
+
+        current_stock = current_stock - demand_qty + supply_qty
+
+        projection.append({
+            "date": day.isoformat(),
+            "projected_stock": current_stock
         })
 
-    return timeline
+    return projection
