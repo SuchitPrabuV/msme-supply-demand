@@ -2,41 +2,92 @@
 
 {% block content %}
 
-<h2>Dashboard</h2>
-<hr>
+<div class="container mt-4">
 
-<div class="row">
+    <h2>Dashboard</h2>
+    <hr>
 
-    <div class="col-md-4">
-        <div class="card border-danger">
-            <div class="card-body">
-                <h5 class="card-title text-danger">Critical Alerts</h5>
-                <h2>{{ critical }}</h2>
-                <p>Items below safety stock</p>
+    <div class="row">
+
+        <!-- Critical -->
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-danger shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Critical Alerts</h5>
+                    <h2>{{ critical }}</h2>
+                    <p>Items below safety stock</p>
+                </div>
             </div>
         </div>
+
+        <!-- Warning -->
+        <div class="col-md-4 mb-3">
+            <div class="card text-dark bg-warning shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Warning Alerts</h5>
+                    <h2>{{ warning }}</h2>
+                    <p>Low inventory risk</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Healthy -->
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-success shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Healthy Items</h5>
+                    <h2>{{ healthy }}</h2>
+                    <p>No immediate risk</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="col-md-4">
-        <div class="card border-warning">
-            <div class="card-body">
-                <h5 class="card-title text-warning">Warning Alerts</h5>
-                <h2>{{ warning }}</h2>
-                <p>Low inventory risk</p>
-            </div>
-        </div>
-    </div>
+    <hr class="mt-5">
 
-    <div class="col-md-4">
-        <div class="card border-success">
-            <div class="card-body">
-                <h5 class="card-title text-success">Healthy Items</h5>
-                <h2>{{ healthy }}</h2>
-                <p>No immediate risk</p>
-            </div>
-        </div>
+    <h4 class="mt-4">Inventory Status Overview</h4>
+
+    <div class="mt-3">
+        <canvas
+            id="statusChart"
+            data-critical="{{ critical }}"
+            data-warning="{{ warning }}"
+            data-healthy="{{ healthy }}"
+        ></canvas>
     </div>
 
 </div>
+
+<!-- Chart Script -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const ctx = document.getElementById("statusChart");
+    const critical = Number(ctx.dataset.critical || 0);
+    const warning = Number(ctx.dataset.warning || 0);
+    const healthy = Number(ctx.dataset.healthy || 0);
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Critical", "Warning", "Healthy"],
+            datasets: [{
+                label: "Item Status Distribution",
+                data: [critical, warning, healthy]
+                 }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+});
+</script>
 
 {% endblock %}
