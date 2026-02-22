@@ -1,0 +1,4 @@
+name,contact_email,lead_time_days,reliability_score
+Acme Metals,acme@email.com,10,0.9
+WireWorks,wire@email.com,5,0.8
+Plasto Ltd,plasto@email.com,20,0.6

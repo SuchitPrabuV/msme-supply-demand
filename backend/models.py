@@ -59,19 +59,6 @@ class Supply(Base):
 
 
 
-# -----------------------------
-# SUPPLIERS TABLE
-# -----------------------------
-class Supplier(Base):
-    __tablename__ = "suppliers"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    contact_email = Column(String, nullable=True)
-    lead_time_days = Column(Integer, default=7)
-    reliability_score = Column(Float, default=1.0)
-
-    supply_orders = relationship("SupplyOrder", back_populates="supplier")
 
 
 # -----------------------------
@@ -99,14 +86,13 @@ class SupplyOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     item_id = Column(Integer, ForeignKey("items.id"))
-    supplier_id = Column(Integer, ForeignKey("suppliers.id"))
+    supplier_name = Column(String, nullable=True)
     quantity = Column(Integer, nullable=False)
     order_date = Column(Date, nullable=False)
     expected_delivery_date = Column(Date, nullable=False)
     status = Column(String, default="ORDERED")
 
     item = relationship("Item", back_populates="supply_orders")
-    supplier = relationship("Supplier", back_populates="supply_orders")
 
 
 # -----------------------------

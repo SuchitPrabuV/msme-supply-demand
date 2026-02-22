@@ -36,6 +36,7 @@ def get_recommendations(db: Session = Depends(get_db)):
 # APPROVE
 @router.post("/recommendations/{rec_id}/approve")
 def approve_recommendation(rec_id: int, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
 
     rec = db.query(models.Recommendation).filter(
         models.Recommendation.id == rec_id
@@ -44,17 +45,28 @@ def approve_recommendation(rec_id: int, db: Session = Depends(get_db)):
     if not rec:
         return {"message": "Recommendation not found"}
 
+    item = db.query(models.Item).filter(models.Item.id == rec.item_id).first()
+    if not item:
+        return {"message": "Item not found"}
+
     # 1️⃣ Change recommendation status
     rec.status = "APPROVED"
 
-    # 2️⃣ Increase stock
-    item = db.query(models.Item).filter(
-        models.Item.id == rec.item_id
-    ).first()
+    # 2️⃣ Create a Supply Order (PO)
+    # Use default lead time since Suppliers module was removed
+    lead_time = 7
+    delivery_date = date.today() + timedelta(days=lead_time)
 
-    if item:
-        item.current_stock += rec.recommended_qty
-
+    new_po = models.SupplyOrder(
+        item_id=item.id,
+        supplier_name="Recommended Supplier",
+        quantity=rec.recommended_qty, # Keeping original quantity logic as min_stock is undefined
+        order_date=date.today(),
+        expected_delivery_date=delivery_date,
+        status="ORDERED"
+    )
+    
+    db.add(new_po)
     db.commit()
 
-    return {"message": "Recommendation approved and stock updated"}
+    return {"message": f"Recommendation approved. PO created for {rec.recommended_qty} units."}

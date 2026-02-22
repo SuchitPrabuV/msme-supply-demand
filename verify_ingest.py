@@ -19,7 +19,7 @@ headers = {
     'Content-Length': str(len(body))
 }
 
-conn.request("POST", "/api/ingest", body, headers)
+conn.request("POST", "/api/ingest?file_type=items", body, headers)
 res = conn.getresponse()
 data = res.read()
 

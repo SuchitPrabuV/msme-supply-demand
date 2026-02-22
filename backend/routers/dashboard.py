@@ -59,26 +59,5 @@ def dashboard_summary(db: Session = Depends(get_db)):
     }
 @router.get("/dashboard/supplier-risk")
 def supplier_risk_dashboard(db: Session = Depends(get_db)):
-
-    suppliers = db.query(models.Supplier).all()
-
-    result = []
-
-    for supplier in suppliers:
-
-        if supplier.reliability_score < 0.5:
-            risk = "HIGH"
-        elif supplier.reliability_score < 0.8:
-            risk = "MEDIUM"
-        else:
-            risk = "LOW"
-
-        result.append({
-            "supplier_id": supplier.id,
-            "name": supplier.name,
-            "lead_time_days": supplier.lead_time_days,
-            "reliability_score": supplier.reliability_score,
-            "risk_level": risk
-        })
-
-    return result
+    # Supplier risk is disabled since Suppliers module was removed.
+    return []

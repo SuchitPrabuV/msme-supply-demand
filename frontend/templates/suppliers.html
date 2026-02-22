@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Suppliers</h2>
+<table class="table table-striped">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Lead Time</th>
+        <th>Reliability</th>
+    </tr>
+    {% for s in suppliers %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.contact_email }}</td>
+        <td>{{ s.lead_time_days }}</td>
+        <td>{{ s.reliability_score }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

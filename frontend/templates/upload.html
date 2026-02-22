@@ -2,58 +2,165 @@
 
 {% block content %}
 
-<h2>Upload Data</h2>
-<hr>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Upload Data</h5>
+            </div>
+            <div class="card-body">
+                <form action="/api/ingest" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Select File Type</label>
+                        <select name="file_type" class="form-select" required>
+                            <option value="items">Items (Master Data)</option>
+                            <option value="demand_orders">Demand Orders</option>
+                            <option value="supply_orders">Supply Orders</option>
+                            <option value="production_runs">Production Runs</option>
+                        </select>
+                        <div class="form-text">Choose the type of data contained in your CSV file.</div>
+                    </div>
 
-<form action="/api/ingest" method="post" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Select CSV File</label>
-        <input type="file" name="file" class="form-control" required>
+                    <div class="mb-3">
+                        <label class="form-label">Upload CSV File</label>
+                        <input type="file" name="file" class="form-control" required accept=".csv">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-upload"></i> Ingest Data
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        {% if message %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {% if preview_data %}
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Data Preview (First 5 Rows)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                {% for column in preview_data[0].keys() %}
+                                <th class="px-3">{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in preview_data %}
+                            <tr>
+                                {% for value in row.values() %}
+                                <td class="px-3">{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <button type="submit" class="btn btn-primary">
-        Upload File
-    </button>
-</form>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">CSV Requirements</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">The system automatically maps column names. Below are the required
+                    fields for each type:</p>
 
-<hr>
-
-<!-- Result Section -->
-<div class="mt-4">
-    <h5>Upload Status</h5>
-
-    {% if message %}
-        <div class="alert alert-success">
-            {{ message }}
+                <div class="accordion accordion-flush" id="requirementsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#itemsReq">
+                                <strong>Items</strong>
+                            </button>
+                        </h2>
+                        <div id="itemsReq" class="accordion-collapse collapse" data-bs-parent="#requirementsAccordion">
+                            <div class="accordion-body small">
+                                <ul>
+                                    <li><strong>SKU</strong> (or Item Code)</li>
+                                    <li><strong>Name</strong></li>
+                                    <li><strong>Current Stock</strong> (or Qty)</li>
+                                    <li><strong>Cost Price</strong></li>
+                                    <li><strong>Selling Price</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#demandReq">
+                                <strong>Demand Orders</strong>
+                            </button>
+                        </h2>
+                        <div id="demandReq" class="accordion-collapse collapse" data-bs-parent="#requirementsAccordion">
+                            <div class="accordion-body small">
+                                <ul>
+                                    <li><strong>SKU</strong></li>
+                                    <li><strong>Customer Name</strong></li>
+                                    <li><strong>Quantity</strong></li>
+                                    <li><strong>Due Date</strong></li>
+                                    <li><strong>Priority</strong> (LOW/MEDIUM/HIGH)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#supplyReq">
+                                <strong>Supply Orders</strong>
+                            </button>
+                        </h2>
+                        <div id="supplyReq" class="accordion-collapse collapse" data-bs-parent="#requirementsAccordion">
+                            <div class="accordion-body small">
+                                <ul>
+                                    <li><strong>SKU</strong></li>
+                                    <li><strong>Supplier Name</strong></li>
+                                    <li><strong>Quantity</strong></li>
+                                    <li><strong>Order Date</strong></li>
+                                    <li><strong>Expected Delivery Date</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#prodReq">
+                                <strong>Production Runs</strong>
+                            </button>
+                        </h2>
+                        <div id="prodReq" class="accordion-collapse collapse" data-bs-parent="#requirementsAccordion">
+                            <div class="accordion-body small">
+                                <ul>
+                                    <li><strong>SKU</strong></li>
+                                    <li><strong>Quantity</strong></li>
+                                    <li><strong>Start Date</strong></li>
+                                    <li><strong>End Date</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% endif %}
+    </div>
 </div>
 
-{% if preview_data %}
-<h5 class="mt-4">Data Preview</h5>
-
-<table class="table table-bordered table-striped">
-    <thead class="table-dark">
-        <tr>
-            {% for column in preview_data[0].keys() %}
-                <th>{{ column }}</th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in preview_data %}
-        <tr>
-            {% for value in row.values() %}
-                <td>{{ value }}</td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
-
-
 {% endblock %}
-
-
-

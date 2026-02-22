@@ -1,0 +1,4 @@
+sku,supplier_name,quantity,order_date,expected_delivery_date,status
+ITEM001,Acme Metals,200,01-02-2026,15-02-2026,ORDERED
+ITEM002,WireWorks,300,05-02-2026,08-02-2026,ORDERED
+ITEM003,Plasto Ltd,500,01-02-2026,25-02-2026,CANCELLED

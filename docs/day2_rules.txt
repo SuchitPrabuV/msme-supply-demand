@@ -1,0 +1,125 @@
+ITEMS (items.csv)
+Required Columns
+sku
+name
+cost_price
+selling_price
+current_stock
+
+Default Values
+category → NULL (optional)
+safety_stock → 0
+min_order_qty → 1
+Reject File If
+sku missing
+name missing
+cost_price < 0
+selling_price < 0
+duplicate sku inside file
+current_stock not a number
+any required column missing
+
+SUPPLIERS (suppliers.csv)
+Required Columns
+name
+
+Default Values
+contact_email → NULL
+lead_time_days → 7
+reliability_score → 1.0
+Reject File If
+name missing
+reliability_score < 0 or > 1
+lead_time_days < 0
+duplicate supplier name inside file
+
+DEMAND ORDERS (demand_orders.csv)
+Required Columns
+
+sku
+customer_name
+quantity
+due_date
+priority
+
+Default Values
+status → OPEN
+Reject File If
+sku does not exist in items table
+quantity ≤ 0
+due_date invalid format
+priority not in (LOW, MEDIUM, HIGH)
+required column missing
+
+SUPPLY ORDERS (supply_orders.csv)
+Required Columns
+sku
+supplier_name
+quantity
+order_date
+expected_delivery_date
+
+Default Values
+status → ORDERED
+Reject File If
+sku does not exist
+supplier_name does not exist
+quantity ≤ 0
+expected_delivery_date < order_date
+invalid date format
+required column missing
+
+PRODUCTION RUNS (production_runs.csv)
+Required Columns
+sku
+quantity
+start_date
+end_date
+
+Default Values
+status → PLANNED
+Reject File If
+sku does not exist
+quantity ≤ 0
+end_date < start_date
+invalid date format
+required column missing
+
+DEMANDS (demands.csv)
+Required Columns
+sku
+quantity
+demand_date
+Default Values
+None
+Reject File If
+sku does not exist
+quantity ≤ 0
+invalid date format
+required column missing
+
+SUPPLIES (supplies.csv)
+Required Columns
+sku
+quantity
+supply_date
+
+Default Values
+None
+Reject File If
+sku does not exist
+quantity ≤ 0
+invalid date format
+required column missing
+
+RECOMMENDATIONS (recommendations.csv)
+Required Columns
+sku
+recommended_qty
+
+Default Values
+status → PENDING
+Reject File If
+sku does not exist
+recommended_qty ≤ 0
+required column missing

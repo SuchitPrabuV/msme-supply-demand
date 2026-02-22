@@ -4,8 +4,7 @@ from typing import List
 
 from backend.database import SessionLocal
 from backend import models, schemas
-from backend.models import Item
-from backend.schemas import ItemResponse
+from backend.utils import refresh_item_status
 
 router = APIRouter(prefix="/items", tags=["Items"])
 
@@ -36,7 +35,7 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
 
 
 # GET ALL ITEMS  ✅ (OUTSIDE CREATE FUNCTION)
-@router.get("/", response_model=List[ItemResponse])
+@router.get("/", response_model=List[schemas.ItemResponse])
 def get_items(db: Session = Depends(get_db)):
     items = db.query(models.Item).all()
     return items
@@ -58,3 +57,35 @@ def update_stock(
     db.commit()
 
     return {"message": "Stock updated successfully"}
+
+
+# UPDATE ITEM
+@router.put("/{item_id}", response_model=schemas.ItemResponse)
+def update_item(item_id: int, item_update: schemas.ItemUpdate, db: Session = Depends(get_db)):
+    db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    update_data = item_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_item, key, value)
+
+    db.commit()
+    db.refresh(db_item)
+
+    # Refresh alerts/recommendations using central utility
+    refresh_item_status(db, db_item)
+
+    return db_item
+
+
+# DELETE ITEM
+@router.delete("/{item_id}")
+def delete_item(item_id: int, db: Session = Depends(get_db)):
+    db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    db.delete(db_item)
+    db.commit()
+    return {"message": "Item deleted successfully"}

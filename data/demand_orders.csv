@@ -1,0 +1,5 @@
+sku,customer_name,quantity,due_date,priority,status
+ITEM001,ABC Corp,50,18-02-2026,HIGH,OPEN
+ITEM002,XYZ Ltd,40,10-02-2026,MEDIUM,OPEN
+ITEM003,Local Shop,200,20-02-2026,HIGH,OPEN
+ITEM002,ABC Corp,60,25-02-2026,LOW,OPEN
