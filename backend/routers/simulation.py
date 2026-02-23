@@ -22,39 +22,35 @@ def simulate_projection(
     simulation: SimulationInput,
     db: Session = Depends(get_db)
 ):
-
     item = db.query(models.Item).filter(models.Item.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    # Get baseline projections
+    # Base projection (no overrides)
     base_projections = calculate_projection(db, item)
-    
-    simulated_projections = []
-    current_sim_stock = item.current_stock
-    
-    # We re-calculate the simulation step-by-step applying the extra demand/supply
-    for p in base_projections:
-        # Base daily changes
-        daily_demand = p["demand"] + (simulation.extra_demand if p["day"] == 0 else 0) 
-        # Note: extra_demand/supply can be interpreted as 'one-time' or 'ongoing'.
-        # Usually 'What-If' for MSMEs is "What if this order comes in today?" or "What if everything increases?".
-        # Let's assume extra_demand/supply are daily additions for simplicity in this demo or scale it.
-        # Design Doc says "Allow user to scale Demand by +/- %".
-        
-        daily_supply = p["supply"] + (simulation.extra_supply if p["day"] == 0 else 0)
 
-        current_sim_stock = current_sim_stock - daily_demand + daily_supply
-        
-        simulated_projections.append({
-            "day": p["day"],
-            "date": p["date"],
-            "base_stock": p["projected_stock"],
-            "simulated_stock": current_sim_stock
-        })
+    # Simulated projection (with overrides applied)
+    sim_projections = calculate_projection(
+        db,
+        item,
+        sim_add_demand=simulation.additional_demand,
+        sim_add_supply=simulation.additional_supply,
+        sim_supply_delay=simulation.supply_delay_days
+    )
+
+    is_stockout_risk = any(p["projected_stock"] < item.safety_stock for p in sim_projections)
 
     return {
-        "item_name": item.name,
-        "base_stock": item.current_stock,
-        "simulation": simulated_projections
+        "item": {
+            "id": item.id,
+            "sku": item.sku,
+            "name": item.name,
+            "current_stock": item.current_stock,
+            "safety_stock": item.safety_stock,
+        },
+        "base_projections": base_projections,
+        "simulated_projections": sim_projections,
+        "summary": {
+            "is_stockout_risk": is_stockout_risk,
+        }
     }

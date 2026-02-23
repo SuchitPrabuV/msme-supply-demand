@@ -5,10 +5,10 @@ def generate_recommendation(db, item, projections):
     """
     Analyzes projections and recommends a replenishment quantity if needed.
     """
-    
+
     # Horizon Stock Logic: Only recommend if the final day is still below safety.
     horizon_stock = projections[-1]["projected_stock"] if projections else item.current_stock
-    
+
     # If horizon stock is healthy, resolve all pending recommendations
     if horizon_stock >= item.safety_stock:
         pending_recs = db.query(models.Recommendation).filter(
@@ -22,7 +22,7 @@ def generate_recommendation(db, item, projections):
 
     # Find the minimum projected stock in the window to calculate required quantity
     min_stock = min(p["projected_stock"] for p in projections)
-    
+
     # Calculate required quantity to restore safety stock at the minimum point
     required_quantity = item.safety_stock - min_stock
 
@@ -46,7 +46,7 @@ def generate_recommendation(db, item, projections):
     # Create new recommendation
     new_rec = models.Recommendation(
         item_id=item.id,
-        recommended_qty=required_quantity,
+        recommended_qty=int(required_quantity),
         status="PENDING"
     )
 

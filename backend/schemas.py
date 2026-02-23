@@ -108,5 +108,6 @@ class ProductionRunCreate(BaseModel):
 
 # -------- SIMULATION INPUT --------
 class SimulationInput(BaseModel):
-    extra_demand: int = 0
-    extra_supply: int = 0
+    additional_demand: int = 0      # Add/subtract units from daily demand
+    additional_supply: int = 0      # Add units to daily supply (e.g. from other business)
+    supply_delay_days: int = 0      # e.g. +2 days for all supply

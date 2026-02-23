@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>What-If Simulation Engine</h3>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="simToggle" style="transform: scale(1.5);">
+            <label class="form-check-label ms-2 fw-bold" for="simToggle">Simulation Mode</label>
+        </div>
+    </div>
+
+    <!-- Product Selection and Controls -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Product & Controls</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Product</label>
+                        <select class="form-select" id="productSelect">
+                            <option value="">-- Select an Item --</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="simControls" class="d-none">
+                        <hr>
+                        <!-- 1. Demand Order -->
+                        <div class="mb-4">
+                            <label class="form-label d-flex justify-content-between">
+                                Additional Daily Demand (Units) <span id="demandVal" class="badge bg-primary">0</span>
+                            </label>
+                            <input type="range" class="form-range" id="demandSlider" min="-50" max="500" step="5"
+                                value="0">
+                            <div class="small text-muted text-center mt-1">Positive increases demand, Negative decreases
+                                it</div>
+                        </div>
+
+                        <!-- 2. Supply Order -->
+                        <div class="mb-4">
+                            <label class="form-label d-flex justify-content-between">
+                                Additional Daily Supply (Units) <span id="supplyVal" class="badge bg-success">0</span>
+                            </label>
+                            <input type="range" class="form-range" id="supplySlider" min="-50" max="500" step="5"
+                                value="0">
+                            <div class="small text-muted text-center mt-1">Simulate supply from other business units
+                            </div>
+                        </div>
+
+                        <!-- 3. Supply Delay -->
+                        <div class="mb-4">
+                            <label class="form-label d-flex justify-content-between">
+                                Supply Delay (Days) <span id="delayVal" class="badge bg-warning text-dark">0 Days</span>
+                            </label>
+                            <input type="range" class="form-range" id="delaySlider" min="0" max="14" step="1" value="0">
+                            <div class="small text-muted text-center mt-1">Shifts all expected deliveries</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Stock Projection Impact</h5>
+                </div>
+                <div class="card-body">
+                    <div id="noData" class="text-center py-5 text-muted">
+                        <i class="bi bi-graph-up-arrow" style="font-size: 3rem;"></i>
+                        <p class="mt-3">Select a product and enable simulation to see the impact.</p>
+                    </div>
+
+                    <div id="chartContainer" class="d-none">
+                        <canvas id="simChart" height="200"></canvas>
+
+                        <div id="simAlert" class="alert mt-3 d-none">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <span id="alertMsg"></span>
+                        </div>
+
+                        <div class="table-responsive mt-4">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Base Stock</th>
+                                        <th>Simulated Stock</th>
+                                        <th>Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="simTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const simToggle = document.getElementById("simToggle");
+        const productSelect = document.getElementById("productSelect");
+        const simControls = document.getElementById("simControls");
+        const demandSlider = document.getElementById("demandSlider");
+        const supplySlider = document.getElementById("supplySlider");
+        const delaySlider = document.getElementById("delaySlider");
+
+        const demandVal = document.getElementById("demandVal");
+        const supplyVal = document.getElementById("supplyVal");
+        const delayVal = document.getElementById("delayVal");
+
+        const noData = document.getElementById("noData");
+        const chartContainer = document.getElementById("chartContainer");
+        const simTable = document.getElementById("simTable");
+        const simAlert = document.getElementById("simAlert");
+        const alertMsg = document.getElementById("alertMsg");
+
+        let simChartInstance = null;
+        let isSimulationMode = false;
+
+        // UI Updates
+        simToggle.addEventListener("change", () => {
+            isSimulationMode = simToggle.checked;
+            simControls.classList.toggle("d-none", !isSimulationMode);
+            updateSimulation();
+        });
+
+        productSelect.addEventListener("change", updateSimulation);
+        demandSlider.addEventListener("input", (e) => {
+            demandVal.innerText = (e.target.value > 0 ? "+" : "") + e.target.value;
+            updateSimulation();
+        });
+        supplySlider.addEventListener("input", (e) => {
+            supplyVal.innerText = (e.target.value > 0 ? "+" : "") + e.target.value;
+            updateSimulation();
+        });
+        delaySlider.addEventListener("input", (e) => {
+            delayVal.innerText = e.target.value + " Days";
+            updateSimulation();
+        });
+
+        function updateSimulation() {
+            const itemId = productSelect.value;
+            if (!itemId) {
+                chartContainer.classList.add("d-none");
+                noData.classList.remove("d-none");
+                return;
+            }
+
+            if (!isSimulationMode) {
+                // Load base projection
+                fetch(`/api/projections/${itemId}`)
+                    .then(res => res.json())
+                    .then(data => renderData(data.projections, null, data.item.safety_stock));
+            } else {
+                // Run simulation
+                const body = {
+                    additional_demand: parseInt(demandSlider.value),
+                    additional_supply: parseInt(supplySlider.value),
+                    supply_delay_days: parseInt(delaySlider.value)
+                };
+
+                fetch(`/api/simulate/${itemId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        renderData(data.base_projections, data.simulated_projections, data.item.safety_stock);
+                        handleAlerts(data.summary);
+                    });
+            }
+        }
+
+        function renderData(base, sim, safety) {
+            noData.classList.add("d-none");
+            chartContainer.classList.remove("d-none");
+
+            const labels = base.map(p => p.date);
+            const baseData = base.map(p => p.projected_stock);
+            const simData = sim ? sim.map(p => p.projected_stock) : null;
+
+            // Update Table
+            simTable.innerHTML = "";
+            base.forEach((p, i) => {
+                const s = sim ? sim[i].projected_stock : p.projected_stock;
+                const delta = s - p.projected_stock;
+                const rowClass = s < safety ? 'table-danger' : (s > safety * 5 ? 'table-info' : '');
+
+                simTable.innerHTML += `
+                <tr class="${rowClass}">
+                    <td>${p.date}</td>
+                    <td>${p.projected_stock}</td>
+                    <td class="fw-bold">${s}</td>
+                    <td class="${delta < 0 ? 'text-danger' : 'text-success'}">
+                        ${delta > 0 ? '+' : ''}${delta.toFixed(1)}
+                    </td>
+                </tr>
+            `;
+            });
+
+            // Update Chart
+            if (simChartInstance) simChartInstance.destroy();
+
+            const datasets = [
+                {
+                    label: "Base Projection",
+                    data: baseData,
+                    borderColor: "#6c757d",
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: "Safety Stock",
+                    data: new Array(labels.length).fill(safety),
+                    borderColor: "#dc3545",
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    fill: false
+                }
+            ];
+
+            if (simData) {
+                datasets.unshift({
+                    label: "SIMULATED Projection",
+                    data: simData,
+                    borderColor: "#0d6efd",
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.3
+                });
+            }
+
+            simChartInstance = new Chart(document.getElementById("simChart"), {
+                type: "line",
+                data: { labels, datasets },
+                options: { responsive: true, scales: { y: { beginAtZero: false } } }
+            });
+        }
+
+        function handleAlerts(summary) {
+            simAlert.classList.add("d-none");
+            if (!summary) return;
+
+            if (summary.is_stockout_risk) {
+                simAlert.className = "alert alert-danger mt-3 d-block";
+                alertMsg.innerText = "CRITICAL: Stockout detected! Simulated stock will fall below safety stock.";
+            }
+        }
+    });
+</script>
+{% endblock %}

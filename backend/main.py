@@ -123,6 +123,14 @@ def debug_all():
 
 
 
+@app.get("/simulation")
+def simulation_view(request: Request):
+    db = SessionLocal()
+    items = db.query(models.Item).all()
+    db.close()
+    return templates.TemplateResponse("simulation.html", {"request": request, "items": items})
+
+
 @app.get("/demand-orders-view", response_class=HTMLResponse)
 def demand_orders_view(request: Request):
     db = SessionLocal()
