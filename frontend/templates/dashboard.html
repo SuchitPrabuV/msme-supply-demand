@@ -45,21 +45,137 @@
 
     <hr class="mt-5">
 
-    <h4 class="mt-4">Inventory Status Overview</h4>
+    <!-- Quick Create Section -->
 
-    <!-- 🔽 Day 10 Scenario Toggle -->
-    <div class="mb-3">
-        <button class="btn btn-primary" onclick="loadReal()">Real Scenario</button>
-        <button class="btn btn-warning ms-2" onclick="loadSimulated()">Simulate Demand x2</button>
-    </div>
+    <!-- Quick Create Section -->
+    <h4>Quick Create</h4>
+    <div class="accordion shadow-sm mt-3" id="quickCreateAccordion">
+        <!-- Demand Order Form -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseDemand">
+                    Create Demand Order
+                </button>
+            </h2>
+            <div id="collapseDemand" class="accordion-collapse collapse" data-bs-parent="#quickCreateAccordion">
+                <div class="accordion-body">
+                    <form id="createDemandForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Product / SKU</label>
+                            <select id="demand-item-id" class="form-select" required>
+                                <option value="" selected disabled>Select SKU...</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" id="demand-customer" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" id="demand-qty" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" id="demand-due" class="form-control" required>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="button" class="btn btn-primary" onclick="submitDemand()">Add Demand
+                                Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-    <div class="mt-3">
-        <canvas
-            id="statusChart"
-            data-critical="{{ critical }}"
-            data-warning="{{ warning }}"
-            data-healthy="{{ healthy }}"
-        ></canvas>
+        <!-- Supply Order Form -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseSupply">
+                    Create Supply Order
+                </button>
+            </h2>
+            <div id="collapseSupply" class="accordion-collapse collapse" data-bs-parent="#quickCreateAccordion">
+                <div class="accordion-body">
+                    <form id="createSupplyForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Product / SKU</label>
+                            <select id="supply-item-id" class="form-select" required>
+                                <option value="" selected disabled>Select SKU...</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Supplier Name</label>
+                            <input type="text" id="supply-name" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" id="supply-qty" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Order Date</label>
+                            <input type="date" id="supply-order-date" class="form-control" required>
+                        </div>
+                        <div class="col-md-2 mt-3">
+                            <label class="form-label">Expected Delivery</label>
+                            <input type="date" id="supply-delivery-date" class="form-control" required>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="button" class="btn btn-success" onclick="submitSupply()">Add Supply
+                                Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Run Form -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseProd">
+                    Create Production Run
+                </button>
+            </h2>
+            <div id="collapseProd" class="accordion-collapse collapse" data-bs-parent="#quickCreateAccordion">
+                <div class="accordion-body">
+                    <form id="createProdForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Product / SKU</label>
+                            <select id="prod-item-id" class="form-select" required>
+                                <option value="" selected disabled>Select SKU...</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" id="prod-qty" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" id="prod-start" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" id="prod-end" class="form-control" required>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="button" class="btn btn-warning" onclick="submitProd()">Add Production
+                                Run</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <hr class="mt-5">
@@ -80,66 +196,57 @@
 <!-- ALERT SCRIPT -->
 <!-- ========================= -->
 <script>
-fetch("/api/alerts")
-    .then(res => res.json())
-    .then(data => {
+    fetch("/api/alerts")
+        .then(res => res.json())
+        .then(data => {
 
-        const container = document.getElementById("alertsContainer");
-        container.innerHTML = "";
+            const container = document.getElementById("alertsContainer");
+            container.innerHTML = "";
 
-        if (data.length === 0) {
-            container.innerHTML = "<p>No active alerts.</p>";
-            return;
-        }
-
-        data.forEach(alert => {
-
-            let alertClass = "alert-success";
-
-            if (alert.severity === "RED") {
-                alertClass = "alert-danger";
-            } else if (alert.severity === "YELLOW") {
-                alertClass = "alert-warning";
+            if (data.length === 0) {
+                container.innerHTML = "<p>No active alerts.</p>";
+                return;
             }
 
-            container.innerHTML += `
+            data.forEach(alert => {
+
+                let alertClass = "alert-success";
+
+                if (alert.severity === "RED") {
+                    alertClass = "alert-danger";
+                } else if (alert.severity === "YELLOW") {
+                    alertClass = "alert-warning";
+                }
+
+                container.innerHTML += `
                 <div class="alert ${alertClass}">
-                    <strong>${alert.type}</strong> - ${alert.message}
-                    <button class="btn btn-sm btn-dark float-end"
-                        onclick="resolveAlert(${alert.id})">
-                        Resolve
-                    </button>
+                    ${alert.message}
                 </div>
             `;
+            });
         });
-    });
 
-function resolveAlert(id) {
-    fetch(`/api/alerts/${id}/resolve`, {
-        method: "POST"
-    }).then(() => location.reload());
-}
 </script>
 
 <!-- ========================= -->
 <!-- RECOMMENDATION SCRIPT -->
 <!-- ========================= -->
 <script>
-fetch("/api/recommendations")
-    .then(res => res.json())
-    .then(data => {
+    fetch("/api/recommendations")
+        .then(res => res.json())
+        .then(data => {
 
-        const container = document.getElementById("recommendationsContainer");
-        container.innerHTML = "";
+            const container = document.getElementById("recommendationsContainer");
+            container.innerHTML = "";
 
-        if (data.length === 0) {
-            container.innerHTML = "<p>No recommendations.</p>";
-            return;
-        }
+            if (data.length === 0) {
+                container.innerHTML = "<p>No recommendations.</p>";
+                return;
+            }
 
-        data.forEach(rec => {
+            data.forEach(rec => {
 
-            container.innerHTML += `
+                container.innerHTML += `
                 <div class="alert alert-info">
                     <strong>${rec.item_name}</strong> - Recommended order: ${rec.recommended_qty} units
                     <button class="btn btn-sm btn-success float-end ms-2"
@@ -152,69 +259,72 @@ fetch("/api/recommendations")
                     </button>
                 </div>
             `;
+            });
         });
-    });
 
-function approveRec(id) {
-    fetch(`/api/recommendations/${id}/approve`, {
-        method: "POST"
-    }).then(() => location.reload());
-}
+    function approveRec(id) {
+        fetch(`/api/recommendations/${id}/approve`, {
+            method: "POST"
+        }).then(() => location.reload());
+    }
 
-function rejectRec(id) {
-    fetch(`/api/recommendations/${id}/reject`, {
-        method: "POST"
-    }).then(() => location.reload());
-}
+    function rejectRec(id) {
+        fetch(`/api/recommendations/${id}/reject`, {
+            method: "POST"
+        }).then(() => location.reload());
+    }
 </script>
 
 <!-- ========================= -->
-<!-- CHART SCRIPT -->
+<!-- CREATE SUBMISSIONS -->
 <!-- ========================= -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const ctx = document.getElementById("statusChart");
-    const critical = Number(ctx.dataset.critical || 0);
-    const warning = Number(ctx.dataset.warning || 0);
-    const healthy = Number(ctx.dataset.healthy || 0);
-
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Critical", "Warning", "Healthy"],
-            datasets: [{
-                label: "Item Status Distribution",
-                data: [critical, warning, healthy]
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-
-});
-</script>
-
-<!-- ========================= -->
-<!-- DAY 10 SIMULATION SCRIPT -->
-<!-- ========================= -->
-<script>
-function loadReal() {
-    location.reload();
-}
-
-function loadSimulated() {
-    fetch("/api/simulate/1?demand_multiplier=2")
-        .then(res => res.json())
-        .then(data => {
-            console.log("Simulated Data:", data);
-            alert("Simulation loaded. Check console for result.");
+    async function submitDemand() {
+        const data = {
+            item_id: parseInt(document.getElementById("demand-item-id").value),
+            customer_name: document.getElementById("demand-customer").value,
+            quantity: parseInt(document.getElementById("demand-qty").value),
+            due_date: document.getElementById("demand-due").value,
+            priority: "MEDIUM"
+        };
+        const res = await fetch("/api/orders/demand", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
         });
-}
+        if (res.ok) location.reload(); else alert("Failed to add demand order");
+    }
+
+    async function submitSupply() {
+        const data = {
+            item_id: parseInt(document.getElementById("supply-item-id").value),
+            supplier_name: document.getElementById("supply-name").value,
+            quantity: parseInt(document.getElementById("supply-qty").value),
+            order_date: document.getElementById("supply-order-date").value,
+            expected_delivery_date: document.getElementById("supply-delivery-date").value
+        };
+        const res = await fetch("/api/orders/supply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) location.reload(); else alert("Failed to add supply order");
+    }
+
+    async function submitProd() {
+        const data = {
+            item_id: parseInt(document.getElementById("prod-item-id").value),
+            quantity: parseInt(document.getElementById("prod-qty").value),
+            start_date: document.getElementById("prod-start").value,
+            end_date: document.getElementById("prod-end").value
+        };
+        const res = await fetch("/api/production/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) location.reload(); else alert("Failed to add production run");
+    }
 </script>
 
 {% endblock %}

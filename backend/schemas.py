@@ -24,8 +24,10 @@ class ItemResponse(ItemCreate):
 
 class DemandCreate(BaseModel):
     item_id: int
+    customer_name: str
     quantity: int
-    demand_date: date
+    due_date: date
+    priority: str = "MEDIUM"
 
 
 class DemandResponse(DemandCreate):
@@ -38,7 +40,8 @@ class SupplyCreate(BaseModel):
     item_id: int
     supplier_name: Optional[str] = None
     quantity: int
-    supply_date: date
+    order_date: date
+    expected_delivery_date: date
 
 
 
@@ -95,6 +98,13 @@ class ProductionRunUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     status: Optional[str] = None
+
+# -------- PRODUCTION RUN CREATE --------
+class ProductionRunCreate(BaseModel):
+    item_id: int
+    quantity: int
+    start_date: date
+    end_date: date
 
 # -------- SIMULATION INPUT --------
 class SimulationInput(BaseModel):

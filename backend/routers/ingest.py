@@ -43,7 +43,10 @@ async def ingest_csv(
         )
 
     except Exception as e:
+        print(f"DEBUG: CSV Read Error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Invalid CSV file: {str(e)}")
+
+    print(f"DEBUG: Processing file_type='{file_type}' with raw columns: {list(df.columns)}")
 
     # Dynamic Column Mapping
     column_mapping = {
@@ -72,23 +75,26 @@ async def ingest_csv(
             rename_cfg[found[0]] = internal_key
     
     df = df.rename(columns=rename_cfg)
+    print(f"DEBUG: Final mapped columns: {list(df.columns)}")
 
     # Route to correct handler
-    if file_type == "items":
-        inserted_count = handle_items(df, db)
-
-
-    elif file_type == "demand_orders":
-        inserted_count = handle_demand_orders(df, db)
-
-    elif file_type == "supply_orders":
-        inserted_count = handle_supply_orders(df, db)
-
-    elif file_type == "production_runs":
-        inserted_count = handle_production_runs(df, db)
-
-    else:
-        raise HTTPException(status_code=400, detail="Invalid file_type")
+    try:
+        if file_type == "items":
+            inserted_count = handle_items(df, db)
+        elif file_type == "demand_orders":
+            inserted_count = handle_demand_orders(df, db)
+        elif file_type == "supply_orders":
+            inserted_count = handle_supply_orders(df, db)
+        elif file_type == "production_runs":
+            inserted_count = handle_production_runs(df, db)
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid file_type: {file_type}")
+    except HTTPException as he:
+        # Re-raise to provide better context if it's our error
+        raise he
+    except Exception as e:
+        print(f"DEBUG: Handler error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal handler error: {str(e)}")
 
     db.commit()
 
@@ -112,7 +118,9 @@ def handle_items(df, db):
 
     for col in required:
         if col not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Missing column: {col}")
+            msg = f"Missing column for Item upload: '{col}'. Found: {list(df.columns)}"
+            print(f"DEBUG Error: {msg}")
+            raise HTTPException(status_code=400, detail=msg)
 
     count = 0
 
@@ -159,7 +167,9 @@ def handle_demand_orders(df, db):
 
     for col in required:
         if col not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Missing column: {col}")
+            msg = f"Missing column for Demand Order upload: '{col}'. Found: {list(df.columns)}"
+            print(f"DEBUG Error: {msg}")
+            raise HTTPException(status_code=400, detail=msg)
 
     count = 0
 
@@ -198,7 +208,9 @@ def handle_supply_orders(df, db):
 
     for col in required:
         if col not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Missing column: {col}")
+            msg = f"Missing column for Supply Order upload: '{col}'. Found: {list(df.columns)}"
+            print(f"DEBUG Error: {msg}")
+            raise HTTPException(status_code=400, detail=msg)
 
     count = 0
 
@@ -235,7 +247,9 @@ def handle_production_runs(df, db):
 
     for col in required:
         if col not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Missing column: {col}")
+            msg = f"Missing column for Production Run upload: '{col}'. Found: {list(df.columns)}"
+            print(f"DEBUG Error: {msg}")
+            raise HTTPException(status_code=400, detail=msg)
 
     count = 0
 
@@ -264,7 +278,3 @@ def handle_production_runs(df, db):
         count += 1
 
     return count
-
-
-
-

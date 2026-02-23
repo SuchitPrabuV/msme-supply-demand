@@ -2,10 +2,56 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center">
-    <h2>Production Runs</h2>
-    <span class="text-muted small">Manage internal manufacturing capacity</span>
+    <div>
+        <h2>Production Runs</h2>
+        <span class="text-muted small">Manage internal manufacturing capacity</span>
+    </div>
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#addRunModal">
+        + Add Production Run
+    </button>
 </div>
 <hr>
+
+<!-- Add Run Modal -->
+<div class="modal fade" id="addRunModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Production Run</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRunForm">
+                    <div class="mb-3">
+                        <label class="form-label">Product / SKU</label>
+                        <select id="add-run-item-id" class="form-select" required>
+                            <option value="" selected disabled>Select SKU...</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="add-run-qty" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="add-run-start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="add-run-end" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="addRun()">Add Run</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% if runs %}
 <div class="table-responsive">
@@ -127,5 +173,33 @@
             alert("Failed to save changes");
         }
     }
+
+    async function addRun() {
+        const data = {
+            item_id: parseInt(document.getElementById('add-run-item-id').value),
+            quantity: parseInt(document.getElementById('add-run-qty').value),
+            start_date: document.getElementById('add-run-start').value,
+            end_date: document.getElementById('add-run-end').value
+        };
+
+        const response = await fetch('/api/production/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Failed to add run");
+        }
+    }
+
+    // Set default start date to today
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('add-run-start');
+        if (dateInput) dateInput.value = today;
+    });
 </script>
 {% endblock %}

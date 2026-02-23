@@ -4,7 +4,7 @@ from sqlalchemy import func
 from backend import models
 
 
-def calculate_projection(db, item, forecast_days=7):
+def calculate_projection(db, item, forecast_days=14):
     """
     Calculates a day-by-day stock projection for the given item.
     Returns: List of dicts [{"date": date_obj, "projected_stock": int}]

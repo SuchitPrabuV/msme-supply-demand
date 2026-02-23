@@ -69,4 +69,24 @@ def approve_recommendation(rec_id: int, db: Session = Depends(get_db)):
     db.add(new_po)
     db.commit()
 
+    # 3️⃣ Refresh item status to auto-resolve alerts
+    from backend.utils import refresh_item_status
+    refresh_item_status(db, item)
+
     return {"message": f"Recommendation approved. PO created for {rec.recommended_qty} units."}
+
+
+# REJECT
+@router.post("/{rec_id}/reject")
+def reject_recommendation(rec_id: int, db: Session = Depends(get_db)):
+    rec = db.query(models.Recommendation).filter(
+        models.Recommendation.id == rec_id
+    ).first()
+
+    if not rec:
+        return {"message": "Recommendation not found"}
+
+    rec.status = "REJECTED"
+    db.commit()
+
+    return {"message": "Recommendation rejected"}

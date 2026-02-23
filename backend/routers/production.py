@@ -25,6 +25,18 @@ def get_db():
 def get_production_runs(db: Session = Depends(get_db)):
     return db.query(models.ProductionRun).options(joinedload(models.ProductionRun.item)).all()
 
+@router.post("/")
+def create_production_run(run: schemas.ProductionRunCreate, db: Session = Depends(get_db)):
+    db_run = models.ProductionRun(**run.dict())
+    db.add(db_run)
+    db.commit()
+    db.refresh(db_run)
+    
+    # Refresh item status
+    refresh_item_status(db, db_run.item)
+    
+    return db_run
+
 @router.put("/{run_id}")
 def update_production_run(run_id: int, run_update: schemas.ProductionRunUpdate, db: Session = Depends(get_db)):
     db_run = db.query(models.ProductionRun).filter(models.ProductionRun.id == run_id).first()
@@ -63,7 +75,8 @@ def delete_production_run(run_id: int, db: Session = Depends(get_db)):
 @router.get("/view", response_class=HTMLResponse)
 def production_runs_view(request: Request, db: Session = Depends(get_db)):
     runs = db.query(models.ProductionRun).options(joinedload(models.ProductionRun.item)).all()
+    items = db.query(models.Item).all()
     return templates.TemplateResponse(
         "production_runs.html",
-        {"request": request, "runs": runs}
+        {"request": request, "runs": runs, "items": items}
     )

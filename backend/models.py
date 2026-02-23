@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
-
+from datetime import datetime, date
 from backend.database import Base
-
 
 # -----------------------------
 # ITEMS TABLE
@@ -23,23 +21,21 @@ class Item(Base):
     safety_stock = Column(Integer, default=0)
     min_order_qty = Column(Integer, default=1)
 
-    demand_orders = relationship("DemandOrder", back_populates="item")
-    supply_orders = relationship("SupplyOrder", back_populates="item")
-    production_runs = relationship("ProductionRun", back_populates="item")
-    alerts = relationship("Alert", back_populates="item")
-    demands = relationship("Demand", back_populates="item")
-    supplies = relationship("Supply", back_populates="item")
-    
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
-from sqlalchemy.orm import relationship
-from datetime import date
+    # Relationships
+    demand_orders = relationship("DemandOrder", back_populates="item", cascade="all, delete-orphan")
+    supply_orders = relationship("SupplyOrder", back_populates="item", cascade="all, delete-orphan")
+    production_runs = relationship("ProductionRun", back_populates="item", cascade="all, delete-orphan")
+    alerts = relationship("Alert", back_populates="item", cascade="all, delete-orphan")
+    demands = relationship("Demand", back_populates="item", cascade="all, delete-orphan")
+    supplies = relationship("Supply", back_populates="item", cascade="all, delete-orphan")
+    recommendations = relationship("Recommendation", back_populates="item", cascade="all, delete-orphan")
 
 
 class Demand(Base):
     __tablename__ = "demands"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     demand_date = Column(Date, default=date.today)
 
@@ -50,25 +46,18 @@ class Supply(Base):
     __tablename__ = "supplies"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     supply_date = Column(Date, default=date.today)
 
     item = relationship("Item", back_populates="supplies")
 
 
-
-
-
-
-# -----------------------------
-# DEMAND ORDERS TABLE
-# -----------------------------
 class DemandOrder(Base):
     __tablename__ = "demand_orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     customer_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
     due_date = Column(Date, nullable=False)
@@ -78,14 +67,11 @@ class DemandOrder(Base):
     item = relationship("Item", back_populates="demand_orders")
 
 
-# -----------------------------
-# SUPPLY ORDERS TABLE
-# -----------------------------
 class SupplyOrder(Base):
     __tablename__ = "supply_orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     supplier_name = Column(String, nullable=True)
     quantity = Column(Integer, nullable=False)
     order_date = Column(Date, nullable=False)
@@ -95,14 +81,11 @@ class SupplyOrder(Base):
     item = relationship("Item", back_populates="supply_orders")
 
 
-# -----------------------------
-# PRODUCTION RUNS TABLE
-# -----------------------------
 class ProductionRun(Base):
     __tablename__ = "production_runs"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
@@ -111,14 +94,11 @@ class ProductionRun(Base):
     item = relationship("Item", back_populates="production_runs")
 
 
-# -----------------------------
-# ALERTS TABLE
-# -----------------------------
 class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     type = Column(String, nullable=False)  # SHORTAGE / OVERSTOCK
     message = Column(Text, nullable=False)
     severity = Column(String, nullable=False)  # RED / YELLOW
@@ -128,19 +108,14 @@ class Alert(Base):
 
     item = relationship("Item", back_populates="alerts")
 
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
-from datetime import datetime
-
 
 class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     recommended_qty = Column(Integer)
     status = Column(String, default="PENDING")  # PENDING / APPROVED / REJECTED
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    item = relationship("Item")
-
+    item = relationship("Item", back_populates="recommendations")

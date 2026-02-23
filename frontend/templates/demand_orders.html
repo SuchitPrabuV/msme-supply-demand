@@ -2,10 +2,67 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center">
-    <h2>Demand Orders</h2>
-    <span class="text-muted small">Manage customer sales orders</span>
+    <div>
+        <h2>Demand Orders</h2>
+        <span class="text-muted small">Manage customer sales orders</span>
+    </div>
+    <div class="btn-group">
+        <a href="/api/export/demand" class="btn btn-outline-secondary">Export to CSV</a>
+        <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#addDemandModal">
+            + Add Demand Order
+        </button>
+    </div>
 </div>
 <hr>
+
+<!-- Add Demand Modal -->
+<div class="modal fade" id="addDemandModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Demand Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addDemandForm">
+                    <div class="mb-3">
+                        <label class="form-label">Product / SKU</label>
+                        <select id="add-demand-item-id" class="form-select" required>
+                            <option value="" selected disabled>Select SKU...</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" id="add-demand-customer" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="add-demand-qty" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="add-demand-date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="add-demand-priority">
+                            <option value="LOW">LOW</option>
+                            <option value="MEDIUM" selected>MEDIUM</option>
+                            <option value="HIGH">HIGH</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addDemandOrder()">Add Order</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% if orders %}
 <div class="table-responsive">
@@ -125,6 +182,27 @@
             location.reload();
         } else {
             alert("Failed to save changes");
+        }
+    }
+    async function addDemandOrder() {
+        const data = {
+            item_id: parseInt(document.getElementById('add-demand-item-id').value),
+            customer_name: document.getElementById('add-demand-customer').value,
+            quantity: parseInt(document.getElementById('add-demand-qty').value),
+            due_date: document.getElementById('add-demand-date').value,
+            priority: document.getElementById('add-demand-priority').value
+        };
+
+        const response = await fetch('/api/orders/demand', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Failed to add order");
         }
     }
 </script>

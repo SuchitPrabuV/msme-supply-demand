@@ -17,6 +17,7 @@ from backend.routers.recommendations import router as recommendations_router
 from backend.routers.simulation import router as simulation_router
 from backend.routers.orders import router as orders_router
 from backend.routers.production import router as production_router
+from backend.routers.export import router as export_router
 from backend.engine import calculate_projection
 
 
@@ -42,6 +43,7 @@ app.include_router(recommendations_router)
 app.include_router(simulation_router)
 app.include_router(orders_router)
 app.include_router(production_router)
+app.include_router(export_router)
 
 
 # ✅ THEN define routes
@@ -51,29 +53,22 @@ from backend.engine import calculate_projection
 def dashboard(request: Request):
 
     db = SessionLocal()
+    
+    # Force global refresh to ensure alerts and recommendations match latest stock/orders
+    from backend.utils import refresh_all_items_status
+    refresh_all_items_status(db)
+    
+    # Pull counts directly from the Alerts table for 100% UI consistency
+    critical = db.query(models.Alert).filter(models.Alert.status == "ACTIVE", models.Alert.severity == "RED").count()
+    warning = db.query(models.Alert).filter(models.Alert.status == "ACTIVE", models.Alert.severity == "YELLOW").count()
+    
+    # Total items
+    total_items = db.query(models.Item).count()
+    
+    # Healthy is total minus anything with an active alert
+    healthy = total_items - (critical + warning)
+    
     items = db.query(models.Item).all()
-
-    critical = 0
-    warning = 0
-    healthy = 0
-
-    for item in items:
-
-        projections = calculate_projection(db, item)
-        min_projected_stock = min(p["projected_stock"] for p in projections)
-
-        if min_projected_stock < item.safety_stock:
-            critical += 1
-        elif min_projected_stock < item.safety_stock * 1.5:
-            warning += 1
-        else:
-            healthy += 1
-
-        print(
-            f"{item.sku} | Current: {item.current_stock} | "
-            f"Min Projected: {min_projected_stock} | "
-            f"Safety: {item.safety_stock}"
-        )
 
     db.close()
 
@@ -83,7 +78,7 @@ def dashboard(request: Request):
             "request": request,
             "critical": critical,
             "warning": warning,
-            "healthy": healthy,
+            "healthy": max(0, healthy),
             "items": items,
         }
     )
@@ -136,10 +131,11 @@ def demand_orders_view(request: Request):
         .options(joinedload(models.DemandOrder.item))
         .all()
     )
+    items = db.query(models.Item).all()
     db.close()
     return templates.TemplateResponse(
         "demand_orders.html",
-        {"request": request, "orders": orders}
+        {"request": request, "orders": orders, "items": items}
     )
 
 @app.get("/supply-orders-view", response_class=HTMLResponse)
@@ -148,9 +144,9 @@ def supply_orders_view(request: Request):
     orders = db.query(models.SupplyOrder).options(
         joinedload(models.SupplyOrder.item)
     ).all()
-
+    items = db.query(models.Item).all()
     db.close()
     return templates.TemplateResponse(
         "supply_orders.html",
-        {"request": request, "orders": orders}
+        {"request": request, "orders": orders, "items": items}
     )
