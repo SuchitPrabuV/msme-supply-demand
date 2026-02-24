@@ -13,6 +13,10 @@ class ItemCreate(BaseModel):
     current_stock: int
     safety_stock: int = 0
     min_order_qty: int = 1
+    overstock_multiplier: int = 3
+    lead_time: int = 7
+    warning_multiplier: float = 1.5
+    reorder_target_multiplier: float = 2.0
 
 
 # -------- ITEM RESPONSE --------
@@ -47,6 +51,8 @@ class SupplyCreate(BaseModel):
 
 class SupplyResponse(SupplyCreate):
     id: int
+    followed_up: bool
+    item: Optional[ItemResponse] = None
 
     class Config:
         from_attributes = True
@@ -75,6 +81,10 @@ class ItemUpdate(BaseModel):
     current_stock: Optional[int] = None
     safety_stock: Optional[int] = None
     min_order_qty: Optional[int] = None
+    overstock_multiplier: Optional[int] = None
+    lead_time: Optional[int] = None
+    warning_multiplier: Optional[float] = None
+    reorder_target_multiplier: Optional[float] = None
 
 # -------- DEMAND UPDATE --------
 class DemandOrderUpdate(BaseModel):
@@ -91,6 +101,7 @@ class SupplyOrderUpdate(BaseModel):
     order_date: Optional[date] = None
     expected_delivery_date: Optional[date] = None
     status: Optional[str] = None
+    followed_up: Optional[bool] = None
 
 # -------- PRODUCTION RUN UPDATE --------
 class ProductionRunUpdate(BaseModel):

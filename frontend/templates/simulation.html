@@ -78,9 +78,27 @@
                     <div id="chartContainer" class="d-none">
                         <canvas id="simChart" height="200"></canvas>
 
-                        <div id="simAlert" class="alert mt-3 d-none">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <span id="alertMsg"></span>
+                        <div id="simImpact" class="row mt-4 d-none">
+                            <div class="col-md-6">
+                                <div class="card border-secondary h-100">
+                                    <div class="card-header bg-secondary text-white py-1">
+                                        <small class="fw-bold">CURRENT STATUS (Baseline)</small>
+                                    </div>
+                                    <div class="card-body p-2" id="baseAlerts">
+                                        <div class="text-muted small italic">No active risks.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-primary h-100">
+                                    <div class="card-header bg-primary text-white py-1">
+                                        <small class="fw-bold">WHAT-IF IMPACT (Simulated)</small>
+                                    </div>
+                                    <div class="card-body p-2" id="simAlerts">
+                                        <div class="text-muted small italic">No active risks.</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="table-responsive mt-4">
@@ -248,13 +266,56 @@
         }
 
         function handleAlerts(summary) {
-            simAlert.classList.add("d-none");
-            if (!summary) return;
+            const simImpact = document.getElementById("simImpact");
+            const baseAlerts = document.getElementById("baseAlerts");
+            const simAlerts = document.getElementById("simAlerts");
 
-            if (summary.is_stockout_risk) {
-                simAlert.className = "alert alert-danger mt-3 d-block";
-                alertMsg.innerText = "CRITICAL: Stockout detected! Simulated stock will fall below safety stock.";
+            if (!summary || !summary.base || !summary.sim) {
+                simImpact.classList.add("d-none");
+                return;
             }
+
+            simImpact.classList.remove("d-none");
+
+            // Helper to build alert HTML
+            function buildAlertHtml(status, isBaseline) {
+                let html = "";
+                if (status.is_critical) {
+                    html += `<div class="alert alert-danger p-2 mb-1 small">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <strong>CRITICAL:</strong> Stockout on ${status.shortage_date}
+                    </div>`;
+                }
+                if (status.is_overstock) {
+                    html += `<div class="alert alert-warning p-2 mb-1 small">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <strong>OVERSTOCK:</strong> Horizon stock (${status.horizon_stock}) is > 3x safety.
+                    </div>`;
+                }
+
+                if (!html) {
+                    html = `<div class="text-success small"><i class="bi bi-check-circle-fill me-1"></i> Stock levels healthy.</div>`;
+                }
+                return html;
+            }
+
+            baseAlerts.innerHTML = buildAlertHtml(summary.base, true);
+
+            // Add comparison highlights for simulated status
+            let simHtml = buildAlertHtml(summary.sim, false);
+
+            // Analysis
+            if (summary.base.is_critical && !summary.sim.is_critical) {
+                simHtml += `<div class="badge bg-success mt-2 d-block p-2"><i class="bi bi-stars me-1"></i> SIMULATION RESOLVES STOCKOUT!</div>`;
+            } else if (!summary.base.is_critical && summary.sim.is_critical) {
+                simHtml += `<div class="badge bg-danger mt-2 d-block p-2"><i class="bi bi-exclamation-octagon me-1"></i> SIMULATION CREATES STOCKOUT!</div>`;
+            }
+
+            if (!summary.base.is_overstock && summary.sim.is_overstock) {
+                simHtml += `<div class="badge bg-warning text-dark mt-1 d-block p-2"><i class="bi bi-capslock me-1"></i> SIMULATION CREATES OVERSTOCK!</div>`;
+            }
+
+            simAlerts.innerHTML = simHtml;
         }
     });
 </script>

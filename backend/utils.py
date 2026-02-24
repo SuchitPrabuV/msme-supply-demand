@@ -9,7 +9,9 @@ def refresh_item_status(db, item):
     Recalculates projections, updates alerts, and generates/updates recommendations
     for a given item. Call this after any change to inventory or orders.
     """
-    projections = calculate_projection(db, item)
+    # Dynamic Horizon: Look ahead lead_time + buffer, min 14 days
+    horizon = max(14, item.lead_time + 7)
+    projections = calculate_projection(db, item, forecast_days=horizon)
     run_alert_engine(db, item, projections)
     generate_recommendation(db, item, projections)
 

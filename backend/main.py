@@ -58,17 +58,32 @@ def dashboard(request: Request):
     from backend.utils import refresh_all_items_status
     refresh_all_items_status(db)
     
-    # Pull counts directly from the Alerts table for 100% UI consistency
-    critical = db.query(models.Alert).filter(models.Alert.status == "ACTIVE", models.Alert.severity == "RED").count()
-    warning = db.query(models.Alert).filter(models.Alert.status == "ACTIVE", models.Alert.severity == "YELLOW").count()
-    
-    # Total items
-    total_items = db.query(models.Item).count()
-    
-    # Healthy is total minus anything with an active alert
-    healthy = total_items - (critical + warning)
-    
+    # Categorize items with their alert messages
     items = db.query(models.Item).all()
+    critical_items = []
+    warning_items = []
+    healthy_items = []
+
+    for item in items:
+        # Check for active alerts
+        active_alerts = db.query(models.Alert).filter(models.Alert.item_id == item.id, models.Alert.status == "ACTIVE").all()
+        
+        # Get the most severe alert message
+        red_alert = next((a for a in active_alerts if a.severity == "RED"), None)
+        yellow_alert = next((a for a in active_alerts if a.severity == "YELLOW"), None)
+
+        # Get pending recommendation
+        rec = db.query(models.Recommendation).filter(
+            models.Recommendation.item_id == item.id,
+            models.Recommendation.status == "PENDING"
+        ).first()
+
+        if red_alert:
+            critical_items.append({"item": item, "message": red_alert.message, "recommendation": rec})
+        elif yellow_alert:
+            warning_items.append({"item": item, "message": yellow_alert.message, "recommendation": rec})
+        else:
+            healthy_items.append({"item": item})
 
     db.close()
 
@@ -76,10 +91,11 @@ def dashboard(request: Request):
         "dashboard.html",
         {
             "request": request,
-            "critical": critical,
-            "warning": warning,
-            "healthy": max(0, healthy),
-            "items": items,
+            "critical_items": critical_items,
+            "warning_items": warning_items,
+            "healthy_items": healthy_items,
+            "total_items": len(items),
+            "items": items # Keep for Quick Create dropdowns
         }
     )
 

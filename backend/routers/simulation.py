@@ -38,7 +38,37 @@ def simulate_projection(
         sim_supply_delay=simulation.supply_delay_days
     )
 
-    is_stockout_risk = any(p["projected_stock"] < item.safety_stock for p in sim_projections)
+    # Calculate status for both
+    def get_alert_status(projections):
+        first_shortage_day = None
+        for p in projections:
+            if p["projected_stock"] < item.safety_stock:
+                if first_shortage_day is None:
+                    first_shortage_day = p["date"]
+        
+        horizon_stock = projections[-1]["projected_stock"] if projections else item.current_stock
+        is_red = first_shortage_day is not None and horizon_stock < item.safety_stock
+        is_warning = (
+            not is_red 
+            and horizon_stock < (item.safety_stock * item.warning_multiplier)
+            and horizon_stock < item.current_stock
+        )
+        is_overstock = (
+            horizon_stock > (item.safety_stock * item.overstock_multiplier) 
+            and item.current_stock >= item.safety_stock 
+            and item.safety_stock > 0
+        )
+        
+        return {
+            "is_critical": is_red,
+            "is_warning": is_warning,
+            "is_overstock": is_overstock,
+            "shortage_date": first_shortage_day.strftime('%d-%m-%Y') if first_shortage_day else None,
+            "horizon_stock": int(horizon_stock)
+        }
+
+    base_status = get_alert_status(base_projections)
+    sim_status = get_alert_status(sim_projections)
 
     return {
         "item": {
@@ -51,6 +81,8 @@ def simulate_projection(
         "base_projections": base_projections,
         "simulated_projections": sim_projections,
         "summary": {
-            "is_stockout_risk": is_stockout_risk,
+            "base": base_status,
+            "sim": sim_status,
+            "is_stockout_risk": sim_status["is_critical"]  # Keep for backward compatibility if needed
         }
     }

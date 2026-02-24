@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, DateTime
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, date
 from backend.database import Base
@@ -20,6 +20,10 @@ class Item(Base):
     current_stock = Column(Integer, nullable=False)
     safety_stock = Column(Integer, default=0)
     min_order_qty = Column(Integer, default=1)
+    overstock_multiplier = Column(Integer, default=3)
+    lead_time = Column(Integer, default=7)
+    warning_multiplier = Column(Float, default=1.5)
+    reorder_target_multiplier = Column(Float, default=2.0)
 
     # Relationships
     demand_orders = relationship("DemandOrder", back_populates="item", cascade="all, delete-orphan")
@@ -77,6 +81,7 @@ class SupplyOrder(Base):
     order_date = Column(Date, nullable=False)
     expected_delivery_date = Column(Date, nullable=False)
     status = Column(String, default="ORDERED")
+    followed_up = Column(Boolean, default=False)
 
     item = relationship("Item", back_populates="supply_orders")
 
@@ -115,6 +120,7 @@ class Recommendation(Base):
     id = Column(Integer, primary_key=True, index=True)
     item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     recommended_qty = Column(Integer)
+    rationale = Column(Text, nullable=True)
     status = Column(String, default="PENDING")  # PENDING / APPROVED / REJECTED
     created_at = Column(DateTime, default=datetime.utcnow)
 

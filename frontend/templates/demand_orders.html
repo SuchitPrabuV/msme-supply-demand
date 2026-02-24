@@ -72,6 +72,7 @@
                 <th>Item</th>
                 <th>Customer</th>
                 <th>Quantity</th>
+                <th>Status</th>
                 <th>Due Date</th>
                 <th>Priority</th>
                 <th>Action</th>
@@ -82,7 +83,15 @@
             <tr id="demand-row-{{ o.id }}">
                 <td>{{ o.item.name }}</td>
                 <td>{{ o.customer_name }}</td>
-                <td>{{ o.quantity }}</td>
+                <td>
+                    {{ o.quantity }}
+                    <div class="small text-muted">Stock: {{ o.item.current_stock }}</div>
+                </td>
+                <td>
+                    <span class="badge {% if o.status == 'APPROVED' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ o.status }}
+                    </span>
+                </td>
                 <td>{{ o.due_date }}</td>
                 <td>
                     <span
@@ -92,6 +101,12 @@
                 </td>
                 <td>
                     <div class="btn-group">
+                        {% if o.status == 'OPEN' %}
+                        <button class="btn btn-sm btn-success" {% if o.item.current_stock < o.quantity %} disabled
+                            title="Insufficient stock" {% endif %} onclick="approveDemandOrder('{{ o.id }}')">
+                            Approve
+                        </button>
+                        {% endif %}
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                             data-bs-target="#editDemandModal"
                             onclick="populateDemandModal('{{ o.id }}', '{{ o.customer_name }}', '{{ o.quantity }}', '{{ o.due_date }}', '{{ o.priority }}')">
@@ -203,6 +218,19 @@
             location.reload();
         } else {
             alert("Failed to add order");
+        }
+    }
+
+    async function approveDemandOrder(id) {
+        const response = await fetch(`/api/orders/demand/${id}/approve`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            const err = await response.json();
+            alert(err.detail || "Failed to approve order");
         }
     }
 </script>

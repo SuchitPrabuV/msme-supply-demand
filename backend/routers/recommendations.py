@@ -27,6 +27,7 @@ def get_recommendations(db: Session = Depends(get_db)):
             "id": rec.id,
             "item_name": rec.item.name if rec.item else None,
             "recommended_qty": rec.recommended_qty,
+            "rationale": rec.rationale,
             "status": rec.status
         }
         for rec in recs
@@ -52,24 +53,25 @@ def approve_recommendation(rec_id: int, db: Session = Depends(get_db)):
     # 1️⃣ Change recommendation status
     rec.status = "APPROVED"
 
-    # 2️⃣ Create a Supply Order (PO)
-    # Use default lead time since Suppliers module was removed
-    lead_time = 7
-    delivery_date = date.today() + timedelta(days=lead_time)
+    # 2️⃣ Update Item Current Stock (Immediate Fix)
+    # The user requested that approving should change the current stock.
+    item.current_stock += rec.recommended_qty
 
+    # 3️⃣ Create a Supply Order (Record of the action)
+    delivery_date = date.today() + timedelta(days=item.lead_time)
     new_po = models.SupplyOrder(
         item_id=item.id,
         supplier_name="Recommended Supplier",
-        quantity=rec.recommended_qty, # Keeping original quantity logic as min_stock is undefined
+        quantity=rec.recommended_qty,
         order_date=date.today(),
         expected_delivery_date=delivery_date,
-        status="ORDERED"
+        status="RECEIVED" # Mark as received since we added to current stock
     )
     
     db.add(new_po)
     db.commit()
 
-    # 3️⃣ Refresh item status to auto-resolve alerts
+    # 4️⃣ Refresh item status to auto-resolve alerts
     from backend.utils import refresh_item_status
     refresh_item_status(db, item)
 
