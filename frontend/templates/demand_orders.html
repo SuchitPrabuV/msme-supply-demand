@@ -8,6 +8,9 @@
     </div>
     <div class="btn-group">
         <a href="/api/export/demand" class="btn btn-outline-secondary">Export to CSV</a>
+        <button class="btn btn-info ms-2" onclick="syncFromGmail()">
+            <span id="sync-icon">🔄</span> Sync from Gmail
+        </button>
         <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#addDemandModal">
             + Add Demand Order
         </button>
@@ -286,6 +289,32 @@
         } else {
             const err = await response.json();
             alert(err.detail || "Failed to approve order");
+        }
+    }
+
+    async function syncFromGmail() {
+        const btn = document.querySelector('button[onclick="syncFromGmail()"]');
+        const icon = document.getElementById('sync-icon');
+        
+        btn.disabled = true;
+        icon.classList.add('fa-spin'); // If using FontAwesome, else just a visual cue
+        btn.innerHTML = '🔄 Syncing...';
+
+        try {
+            const response = await fetch('/api/gmail/sync', { method: 'POST' });
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert("Error: " + (result.detail || "Failed to sync from Gmail"));
+            }
+        } catch (error) {
+            alert("Network error occurred during sync.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Sync from Gmail';
         }
     }
 

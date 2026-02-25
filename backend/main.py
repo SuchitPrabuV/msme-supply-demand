@@ -19,6 +19,7 @@ from backend.routers.orders import router as orders_router
 from backend.routers.production import router as production_router
 from backend.routers.export import router as export_router
 from backend.routers.settings import router as settings_router
+from backend.routers.gmail import router as gmail_router
 from backend.engine import calculate_projection
 
 
@@ -46,6 +47,7 @@ app.include_router(orders_router)
 app.include_router(production_router)
 app.include_router(export_router)
 app.include_router(settings_router)
+app.include_router(gmail_router)
 
 
 # ✅ THEN define routes
