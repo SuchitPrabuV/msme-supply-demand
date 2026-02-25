@@ -1,0 +1,18 @@
+--- Diagnostic for ITEM001 (Steel Rod) ---
+Current Stock: 40
+Safety Stock: 20
+Min Order Qty: 1
+Multiplier: 3.0
+Target Stock: 60.0
+Pending Recommendation: 26 units
+Rationale: To restore inventory buffer to target levels. Targeting 3.0x safety stock.
+Active Alert: SHORTAGE - WARNING [ITEM001]: Low stock risk in 0 days
+
+--- Projection (Next 7 Days) ---
+2026-02-25: Stock 40, Demand 0, Supply 0
+2026-02-26: Stock 39, Demand 1, Supply 0
+2026-02-27: Stock 39, Demand 0, Supply 0
+2026-02-28: Stock 34, Demand 5, Supply 0
+2026-03-01: Stock 34, Demand 0, Supply 0
+2026-03-02: Stock 34, Demand 0, Supply 0
+2026-03-03: Stock 34, Demand 0, Supply 0

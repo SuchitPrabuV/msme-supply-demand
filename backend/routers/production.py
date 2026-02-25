@@ -55,6 +55,32 @@ def update_production_run(run_id: int, run_update: schemas.ProductionRunUpdate, 
     
     return db_run
 
+@router.post("/{run_id}/complete")
+def complete_production_run(run_id: int, db: Session = Depends(get_db)):
+    db_run = db.query(models.ProductionRun).filter(models.ProductionRun.id == run_id).first()
+    if not db_run:
+        raise HTTPException(status_code=404, detail="Production Run not found")
+    
+    if db_run.status == "COMPLETED":
+        raise HTTPException(status_code=400, detail="Production Run already completed")
+
+    item = db_run.item
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # Update inventory
+    item.current_stock += db_run.quantity
+    
+    # Mark as completed
+    db_run.status = "COMPLETED"
+    
+    db.commit()
+    
+    # Refresh item status
+    refresh_item_status(db, item)
+    
+    return {"message": f"Successfully completed production run and added {db_run.quantity} units to inventory"}
+
 @router.delete("/{run_id}")
 def delete_production_run(run_id: int, db: Session = Depends(get_db)):
     db_run = db.query(models.ProductionRun).filter(models.ProductionRun.id == run_id).first()

@@ -34,48 +34,12 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Cost Price</label>
-                            <input type="number" step="0.01" class="form-control" id="add-cost" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Selling Price</label>
-                            <input type="number" step="0.01" class="form-control" id="add-selling" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
                             <label class="form-label">Current Stock</label>
                             <input type="number" class="form-control" id="add-stock" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Safety Stock</label>
                             <input type="number" class="form-control" id="add-safety" value="0">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Min Order Qty</label>
-                            <input type="number" class="form-control" id="add-moq" value="1">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Overstock Multiplier</label>
-                            <input type="number" class="form-control" id="add-overstock" value="3">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Lead Time (Days)</label>
-                            <input type="number" class="form-control" id="add-lead-time" value="7">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Warning Multiplier</label>
-                            <input type="number" step="0.1" class="form-control" id="add-warning" value="1.5">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Reorder Target (x Safety)</label>
-                            <input type="number" step="0.1" class="form-control" id="add-reorder-target" value="2.0">
                         </div>
                     </div>
                 </form>
@@ -97,7 +61,6 @@
                 <th>Name</th>
                 <th>Current Stock</th>
                 <th>Safety Stock</th>
-                <th>Min Order</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -108,12 +71,11 @@
                 <td>{{ item.name }}</td>
                 <td>{{ item.current_stock }}</td>
                 <td>{{ item.safety_stock }}</td>
-                <td>{{ item.min_order_qty }}</td>
                 <td>
                     <div class="btn-group">
                         <a href="/items-view" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                             data-bs-target="#editModal"
-                            onclick="populateModal('{{ item.id }}', '{{ item.sku }}', '{{ item.name }}', '{{ item.current_stock }}', '{{ item.safety_stock }}', '{{ item.min_order_qty }}', '{{ item.overstock_multiplier }}', '{{ item.lead_time }}', '{{ item.warning_multiplier }}', '{{ item.reorder_target_multiplier }}')">
+                            onclick="populateModal('{{ item.id }}', '{{ item.sku }}', '{{ item.name }}', '{{ item.current_stock }}', '{{ item.safety_stock }}')">
                             Edit
                         </a>
                         <button class="btn btn-sm btn-outline-danger" hx-delete="/items/{{ item.id }}"
@@ -162,32 +124,6 @@
                             <input type="number" class="form-control" id="edit-safety">
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Min Order Qty</label>
-                            <input type="number" class="form-control" id="edit-moq">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Overstock Multiplier</label>
-                            <input type="number" class="form-control" id="edit-overstock">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Lead Time (Days)</label>
-                            <input type="number" class="form-control" id="edit-lead-time">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Warning Multiplier</label>
-                            <input type="number" step="0.1" class="form-control" id="edit-warning">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Reorder Target (x Safety)</label>
-                            <input type="number" step="0.1" class="form-control" id="edit-reorder-target">
-                        </div>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -199,17 +135,12 @@
 </div>
 
 <script>
-    function populateModal(id, sku, name, stock, safety, moq, overstock, lead, warning, target) {
+    function populateModal(id, sku, name, stock, safety) {
         document.getElementById('edit-id').value = id;
         document.getElementById('edit-sku').value = sku;
         document.getElementById('edit-name').value = name;
         document.getElementById('edit-stock').value = stock;
         document.getElementById('edit-safety').value = safety;
-        document.getElementById('edit-moq').value = moq;
-        document.getElementById('edit-overstock').value = overstock;
-        document.getElementById('edit-lead-time').value = lead;
-        document.getElementById('edit-warning').value = warning;
-        document.getElementById('edit-reorder-target').value = target;
     }
 
     async function saveItem() {
@@ -218,12 +149,7 @@
             sku: document.getElementById('edit-sku').value,
             name: document.getElementById('edit-name').value,
             current_stock: parseInt(document.getElementById('edit-stock').value),
-            safety_stock: parseInt(document.getElementById('edit-safety').value),
-            min_order_qty: parseInt(document.getElementById('edit-moq').value),
-            overstock_multiplier: parseInt(document.getElementById('edit-overstock').value),
-            lead_time: parseInt(document.getElementById('edit-lead-time').value),
-            warning_multiplier: parseFloat(document.getElementById('edit-warning').value),
-            reorder_target_multiplier: parseFloat(document.getElementById('edit-reorder-target').value)
+            safety_stock: parseInt(document.getElementById('edit-safety').value)
         };
 
         const response = await fetch(`/items/${id}`, {
@@ -242,15 +168,8 @@
         const data = {
             sku: document.getElementById('add-sku').value.toUpperCase(),
             name: document.getElementById('add-name').value,
-            cost_price: parseFloat(document.getElementById('add-cost').value),
-            selling_price: parseFloat(document.getElementById('add-selling').value),
             current_stock: parseInt(document.getElementById('add-stock').value),
-            safety_stock: parseInt(document.getElementById('add-safety').value),
-            min_order_qty: parseInt(document.getElementById('add-moq').value),
-            overstock_multiplier: parseInt(document.getElementById('add-overstock').value),
-            lead_time: parseInt(document.getElementById('add-lead-time').value),
-            warning_multiplier: parseFloat(document.getElementById('add-warning').value),
-            reorder_target_multiplier: parseFloat(document.getElementById('add-reorder-target').value)
+            safety_stock: parseInt(document.getElementById('add-safety').value)
         };
 
         const response = await fetch('/items/', {

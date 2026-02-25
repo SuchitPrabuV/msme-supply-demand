@@ -61,7 +61,51 @@
 </div>
 
 {% if orders %}
-<div class="table-responsive">
+<h4>Draft Supply Plans</h4>
+<div class="table-responsive mb-4">
+    <table class="table table-bordered table-hover shadow-sm bg-light">
+        <thead class="table-secondary">
+            <tr>
+                <th>Item</th>
+                <th>Supplier</th>
+                <th>Quantity</th>
+                <th>Planned Order Date</th>
+                <th>Expected Delivery</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders if o.status == 'DRAFT' %}
+            <tr id="supply-row-{{ o.id }}">
+                <td>{{ o.item.name }}</td>
+                <td>{{ o.supplier_name }}</td>
+                <td>{{ o.quantity }}</td>
+                <td>{{ o.order_date }}</td>
+                <td>{{ o.expected_delivery_date }}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-primary" onclick="confirmOrder('{{ o.id }}')">
+                            Place Order (PO)
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                            data-bs-target="#editSupplyModal"
+                            onclick="populateSupplyModal('{{ o.id }}', '{{ o.supplier_name }}', '{{ o.quantity }}', '{{ o.order_date }}', '{{ o.expected_delivery_date }}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" hx-delete="/api/orders/supply/{{ o.id }}"
+                            hx-confirm="Delete this draft?" hx-target="#supply-row-{{ o.id }}" hx-swap="outerHTML">
+                            Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h4>Active Supply Orders (PO Placed)</h4>
+<div class="table-responsive mb-5">
     <table class="table table-bordered table-hover shadow-sm">
         <thead class="table-dark">
             <tr>
@@ -74,8 +118,8 @@
             </tr>
         </thead>
         <tbody>
-            {% for o in orders %}
-            <tr id="supply-row-{{ o.id }}">
+            {% for o in orders if o.status == 'ORDERED' %}
+            <tr id="supply-row-{{ o.id }}" class="supply-order-row" data-delivery-date="{{ o.expected_delivery_date }}">
                 <td>{{ o.item.name }}</td>
                 <td>{{ o.supplier_name }}</td>
                 <td>{{ o.quantity }}</td>
@@ -83,17 +127,57 @@
                 <td>{{ o.expected_delivery_date }}</td>
                 <td>
                     <div class="btn-group">
+                        <button class="btn btn-sm btn-success"
+                            onclick="receiveSupplyOrder('{{ o.id }}', '{{ o.quantity }}')">
+                            Receive
+                        </button>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                             data-bs-target="#editSupplyModal"
                             onclick="populateSupplyModal('{{ o.id }}', '{{ o.supplier_name }}', '{{ o.quantity }}', '{{ o.order_date }}', '{{ o.expected_delivery_date }}')">
                             Edit
                         </button>
                         <button class="btn btn-sm btn-outline-danger" hx-delete="/api/orders/supply/{{ o.id }}"
-                            hx-confirm="Are you sure you want to delete this supply order?"
-                            hx-target="#supply-row-{{ o.id }}" hx-swap="outerHTML">
+                            hx-confirm="Delete this order? Projections will update." hx-target="#supply-row-{{ o.id }}"
+                            hx-swap="outerHTML">
                             Delete
                         </button>
                     </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h4>Completed History (Received)</h4>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover shadow-sm bg-light">
+        <thead class="table-secondary">
+            <tr>
+                <th>Item</th>
+                <th>Supplier</th>
+                <th>Quantity</th>
+                <th>Order Date</th>
+                <th>Delivery Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders if o.status == 'RECEIVED' %}
+            <tr id="supply-row-{{ o.id }}">
+                <td>{{ o.item.name }}</td>
+                <td>{{ o.supplier_name }}</td>
+                <td>{{ o.quantity }}</td>
+                <td>{{ o.order_date }}</td>
+                <td>{{ o.expected_delivery_date }}</td>
+                <td><span class="badge bg-success">RECEIVED</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" hx-delete="/api/orders/supply/{{ o.id }}"
+                        hx-confirm="Delete this historical record?" hx-target="#supply-row-{{ o.id }}"
+                        hx-swap="outerHTML">
+                        Delete Record
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -194,11 +278,64 @@
         }
     }
 
+    async function confirmOrder(id) {
+        if (!confirm("Confirm this supply order and move to Active? It will now be included in stock projections.")) {
+            return;
+        }
+
+        const response = await fetch(`/api/orders/supply/${id}/order`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            const err = await response.json();
+            alert("Failed to confirm order: " + (err.detail || "Unknown error"));
+        }
+    }
+
+    async function receiveSupplyOrder(id, qty) {
+        if (!confirm(`Are you sure you want to receive ${qty} units into inventory?`)) {
+            return;
+        }
+
+        const response = await fetch(`/api/orders/supply/${id}/receive`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            const err = await response.json();
+            alert("Failed to receive order: " + (err.detail || "Unknown error"));
+        }
+    }
+
+    // Highlight overdue orders
+    function highlightOverdue() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        document.querySelectorAll('.supply-order-row').forEach(row => {
+            const deliveryDateStr = row.getAttribute('data-delivery-date');
+            if (deliveryDateStr) {
+                const deliveryDate = new Date(deliveryDateStr);
+                if (deliveryDate < today) {
+                    row.classList.add('table-warning');
+                    row.title = "This order is overdue!";
+                }
+            }
+        });
+    }
+
     // Set default order date to today
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date().toISOString().split('T')[0];
         const dateInput = document.getElementById('add-supply-order-date');
         if (dateInput) dateInput.value = today;
+
+        highlightOverdue();
     });
 </script>
 {% endblock %}

@@ -54,7 +54,8 @@
 </div>
 
 {% if runs %}
-<div class="table-responsive">
+<h4>Active Production</h4>
+<div class="table-responsive mb-5">
     <table class="table table-bordered table-hover shadow-sm">
         <thead class="table-dark">
             <tr>
@@ -67,20 +68,22 @@
             </tr>
         </thead>
         <tbody>
-            {% for r in runs %}
+            {% for r in runs if r.status != 'COMPLETED' %}
             <tr id="run-row-{{ r.id }}">
                 <td>{{ r.item.name }}</td>
                 <td>{{ r.quantity }}</td>
                 <td>{{ r.start_date }}</td>
                 <td>{{ r.end_date }}</td>
                 <td>
-                    <span
-                        class="badge {% if r.status == 'COMPLETED' %}bg-success{% elif r.status == 'IN_PROGRESS' %}bg-primary{% else %}bg-secondary{% endif %}">
+                    <span class="badge {% if r.status == 'IN_PROGRESS' %}bg-primary{% else %}bg-secondary{% endif %}">
                         {{ r.status }}
                     </span>
                 </td>
                 <td>
                     <div class="btn-group">
+                        <button class="btn btn-sm btn-success" onclick="completeRun('{{ r.id }}', '{{ r.quantity }}')">
+                            Complete Run
+                        </button>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                             data-bs-target="#editRunModal"
                             onclick="populateRunModal('{{ r.id }}', '{{ r.quantity }}', '{{ r.start_date }}', '{{ r.end_date }}', '{{ r.status }}')">
@@ -92,6 +95,39 @@
                             Delete
                         </button>
                     </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h4>Completed Production History</h4>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover shadow-sm bg-light">
+        <thead class="table-secondary">
+            <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in runs if r.status == 'COMPLETED' %}
+            <tr id="run-row-{{ r.id }}">
+                <td>{{ r.item.name }}</td>
+                <td>{{ r.quantity }}</td>
+                <td>{{ r.start_date }}</td>
+                <td>{{ r.end_date }}</td>
+                <td><span class="badge bg-success">COMPLETED</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" hx-delete="/api/production/{{ r.id }}"
+                        hx-confirm="Delete this historical record?" hx-target="#run-row-{{ r.id }}" hx-swap="outerHTML">
+                        Delete Record
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -150,6 +186,23 @@
         document.getElementById('edit-run-start').value = start;
         document.getElementById('edit-run-end').value = end;
         document.getElementById('edit-run-status').value = status;
+    }
+
+    async function completeRun(id, qty) {
+        if (!confirm(`Are you sure you want to complete this production run of ${qty} units? This will add them to inventory.`)) {
+            return;
+        }
+
+        const response = await fetch(`/api/production/${id}/complete`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            const err = await response.json();
+            alert("Failed to complete run: " + (err.detail || "Unknown error"));
+        }
     }
 
     async function saveRun() {

@@ -14,15 +14,40 @@ def get_db():
     finally:
         db.close()
 
+def calculate_priority(due_date):
+    from datetime import date
+    today = date.today()
+    days_diff = (due_date - today).days
+    
+    if days_diff <= 2:
+        return "HIGH"
+    elif days_diff <= 5:
+        return "MEDIUM"
+    else:
+        return "LOW"
+
 # --- DEMAND ORDERS ---
 
 @router.get("/demand", response_model=List[schemas.DemandResponse])
 def get_demand_orders(db: Session = Depends(get_db)):
-    return db.query(models.DemandOrder).options(joinedload(models.DemandOrder.item)).all()
+    # Custom sorting: High=0, Medium=1, Low=2
+    orders = db.query(models.DemandOrder).options(joinedload(models.DemandOrder.item)).all()
+    
+    priority_map = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+    sorted_orders = sorted(orders, key=lambda x: priority_map.get(x.priority, 3))
+    
+    return sorted_orders
 
 @router.post("/demand")
 def create_demand_order(order: schemas.DemandCreate, db: Session = Depends(get_db)):
-    db_order = models.DemandOrder(**order.dict())
+    data = order.dict()
+    # Only auto-calculate if priority is not specifically provided (or is default)
+    # However, to be safe, we'll use the provided one; if we want to be more helpful,
+    # we can remove the 'priority' check and just rely on the UI sending the right value.
+    if order.priority is None or order.priority == "MEDIUM": # MEDIUM is the default
+         data["priority"] = calculate_priority(data["due_date"])
+    
+    db_order = models.DemandOrder(**data)
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
@@ -38,7 +63,16 @@ def update_demand_order(order_id: int, order_update: schemas.DemandOrderUpdate, 
     if not db_order:
         raise HTTPException(status_code=404, detail="Demand Order not found")
     
+    if db_order.status == "APPROVED":
+        raise HTTPException(status_code=400, detail="Cannot edit an approved order")
+    
     update_data = order_update.dict(exclude_unset=True)
+    
+    # If priority is explicitly provided, it takes precedence.
+    # If ONLY due_date is provided, we recalculate.
+    if "due_date" in update_data and "priority" not in update_data:
+        update_data["priority"] = calculate_priority(update_data["due_date"])
+        
     for key, value in update_data.items():
         setattr(db_order, key, value)
     
@@ -170,3 +204,46 @@ def delete_supply_order(order_id: int, db: Session = Depends(get_db)):
         refresh_item_status(db, item)
         
     return {"message": "Supply Order deleted successfully"}
+
+@router.post("/supply/{order_id}/order")
+def confirm_supply_order(order_id: int, db: Session = Depends(get_db)):
+    db_order = db.query(models.SupplyOrder).filter(models.SupplyOrder.id == order_id).first()
+    if not db_order:
+        raise HTTPException(status_code=404, detail="Supply Order not found")
+    
+    if db_order.status != "DRAFT":
+        raise HTTPException(status_code=400, detail=f"Cannot place order in '{db_order.status}' status")
+
+    db_order.status = "ORDERED"
+    db.commit()
+    
+    # Refresh item status (this will now include the order in projections)
+    refresh_item_status(db, db_order.item)
+    
+    return {"message": "Supply Order placed successfully"}
+
+@router.post("/supply/{order_id}/receive")
+def receive_supply_order(order_id: int, db: Session = Depends(get_db)):
+    db_order = db.query(models.SupplyOrder).filter(models.SupplyOrder.id == order_id).first()
+    if not db_order:
+        raise HTTPException(status_code=404, detail="Supply Order not found")
+    
+    if db_order.status == "RECEIVED":
+        raise HTTPException(status_code=400, detail="Order already received")
+
+    item = db_order.item
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # Update inventory
+    item.current_stock += db_order.quantity
+    
+    # Mark as received instead of deleting (persist for history)
+    db_order.status = "RECEIVED"
+    
+    db.commit()
+    
+    # Refresh item status (projections, alerts, etc.)
+    refresh_item_status(db, item)
+    
+    return {"message": f"Successfully received {db_order.quantity} units into inventory"}

@@ -8,8 +8,8 @@ class ItemCreate(BaseModel):
     sku: str
     name: str
     category: Optional[str] = None
-    cost_price: float
-    selling_price: float
+    cost_price: float = 0.0
+    selling_price: float = 0.0
     current_stock: int
     safety_stock: int = 0
     min_order_qty: int = 1
@@ -31,11 +31,13 @@ class DemandCreate(BaseModel):
     customer_name: str
     quantity: int
     due_date: date
-    priority: str = "MEDIUM"
+    priority: Optional[str] = "MEDIUM"
 
 
 class DemandResponse(DemandCreate):
     id: int
+    status: str
+    item: Optional[ItemResponse] = None
 
     class Config:
         from_attributes = True

@@ -23,7 +23,11 @@ class Item(Base):
     overstock_multiplier = Column(Integer, default=3)
     lead_time = Column(Integer, default=7)
     warning_multiplier = Column(Float, default=1.5)
-    reorder_target_multiplier = Column(Float, default=2.0)
+    reorder_target_multiplier = Column(Float, default=3.0)
+
+    # Capacity fields (PS requirements)
+    machine_capacity = Column(Float, default=100.0) # units per day
+    shift_capacity = Column(Float, default=8.0) # hours per shift
 
     # Relationships
     demand_orders = relationship("DemandOrder", back_populates="item", cascade="all, delete-orphan")
@@ -80,7 +84,7 @@ class SupplyOrder(Base):
     quantity = Column(Integer, nullable=False)
     order_date = Column(Date, nullable=False)
     expected_delivery_date = Column(Date, nullable=False)
-    status = Column(String, default="ORDERED")
+    status = Column(String, default="DRAFT")
     followed_up = Column(Boolean, default=False)
 
     item = relationship("Item", back_populates="supply_orders")

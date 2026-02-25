@@ -19,8 +19,8 @@ def run_alert_engine(db, item, projections):
             if first_shortage_day is None:
                 first_shortage_day = p["date"]
 
-        # Rule: YELLOW -> projected_stock < warning_multiplier * safety_stock
-        elif stock < (item.safety_stock * item.warning_multiplier):
+        # Rule: YELLOW -> projected_stock < 3.0 * safety_stock
+        elif stock < (item.safety_stock * 3.0):
             if first_warning_day is None:
                 first_warning_day = p["date"]
 
@@ -35,17 +35,16 @@ def run_alert_engine(db, item, projections):
     # Rule check for YELLOW (Warning):
     # 1. Mitigated FUTURE risk: current is fine, but future was bad and is now fixed by PO
     # 2. Warning band: horizon stock is in the safety-to-warning range
-    warning_threshold = item.safety_stock * item.warning_multiplier
+    warning_threshold = item.safety_stock * 3.0
     
     is_mitigated_future_risk = (not is_red_needed and first_shortage_day is not None and horizon_stock >= item.safety_stock)
-    is_warning_band = (not is_red_needed and first_warning_day is not None and horizon_stock < warning_threshold and horizon_stock < item.current_stock)
+    is_warning_band = (not is_red_needed and first_warning_day is not None and horizon_stock < warning_threshold)
     
     is_yellow_needed = is_mitigated_future_risk or is_warning_band
 
     # Rule check for OVERSTOCK:
-    # Trigger if projected stock exceeds safety stock * multiplier
-    # AND only if we aren't currently in a shortage (current_stock >= safety_stock)
-    overstock_threshold = item.safety_stock * item.overstock_multiplier
+    # Trigger if projected stock exceeds safety stock * 6.0 (Hardcoded)
+    overstock_threshold = item.safety_stock * 6.0
     is_overstock_needed = (
         horizon_stock > overstock_threshold 
         and item.current_stock >= item.safety_stock 
@@ -59,9 +58,18 @@ def run_alert_engine(db, item, projections):
         models.Alert.status == "ACTIVE"
     ).first()
 
+    today = datetime.utcnow().date()
+
     if is_red_needed:
-        date_str = first_shortage_day.strftime('%d-%m-%Y') if first_shortage_day else "immediately"
-        msg = f"CRITICAL [{item.sku} - {item.name}]: Stockout risk found {date_str}"
+        if first_shortage_day:
+            days_to_stockout = (first_shortage_day - today).days
+            if days_to_stockout <= 0:
+                msg = f"CRITICAL [{item.sku} - {item.name}]: Item IS stocked out ({first_shortage_day.strftime('%d/%m')})"
+            else:
+                msg = f"CRITICAL [{item.sku} - {item.name}]: Stockout risk on {first_shortage_day.strftime('%d/%m')}"
+        else:
+            msg = f"CRITICAL [{item.sku} - {item.name}]: Immediate stockout risk"
+
         if not existing_shortage_alert:
             db.add(models.Alert(item_id=item.id, type="SHORTAGE", message=msg, severity="RED", status="ACTIVE", created_at=datetime.utcnow()))
         else:
@@ -70,11 +78,12 @@ def run_alert_engine(db, item, projections):
         db.commit()
 
     elif is_yellow_needed:
-        if is_mitigated_risk:
-            msg = f"WARNING [{item.sku} - {item.name}]: Mitigated shortage (PO in transit)"
+        if is_mitigated_future_risk:
+            # Analyze why it's mitigated (horizon stock is healthy)
+            msg = f"WARNING [{item.sku} - {item.name}]: Temporary gap mitigated by incoming supply"
         else:
-            date_str = first_warning_day.strftime('%d-%m-%Y') if first_warning_day else "upcoming days"
-            msg = f"WARNING [{item.sku} - {item.name}]: Low stock risk around {date_str}"
+            date_str = first_warning_day.strftime('%d/%m') if first_warning_day else "N/A"
+            msg = f"WARNING [{item.sku} - {item.name}]: Low stock risk on {date_str}"
         
         if not existing_shortage_alert:
             db.add(models.Alert(item_id=item.id, type="SHORTAGE", message=msg, severity="YELLOW", status="ACTIVE", created_at=datetime.utcnow()))

@@ -53,19 +53,16 @@ def approve_recommendation(rec_id: int, db: Session = Depends(get_db)):
     # 1️⃣ Change recommendation status
     rec.status = "APPROVED"
 
-    # 2️⃣ Update Item Current Stock (Immediate Fix)
-    # The user requested that approving should change the current stock.
-    item.current_stock += rec.recommended_qty
-
-    # 3️⃣ Create a Supply Order (Record of the action)
-    delivery_date = date.today() + timedelta(days=item.lead_time)
+    # 2️⃣ Create a Supply Order (Record of the action)
+    # Lead time is hardcoded to 7 days for now since we removed the dynamic field
+    delivery_date = date.today() + timedelta(days=7)
     new_po = models.SupplyOrder(
         item_id=item.id,
         supplier_name="Recommended Supplier",
         quantity=rec.recommended_qty,
         order_date=date.today(),
         expected_delivery_date=delivery_date,
-        status="RECEIVED" # Mark as received since we added to current stock
+        status="ORDERED" # Place Order (PO) instead of immediate completion
     )
     
     db.add(new_po)

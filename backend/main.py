@@ -155,6 +155,11 @@ def demand_orders_view(request: Request):
         .options(joinedload(models.DemandOrder.item))
         .all()
     )
+    
+    # Apply priority sorting: HIGH > MEDIUM > LOW
+    priority_map = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+    orders = sorted(orders, key=lambda x: priority_map.get(x.priority, 3))
+    
     items = db.query(models.Item).all()
     db.close()
     return templates.TemplateResponse(
