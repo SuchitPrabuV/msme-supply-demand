@@ -129,3 +129,12 @@ class Recommendation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     item = relationship("Item", back_populates="recommendations")
+
+class Settings(Base):
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_email = Column(String, nullable=True)
+    app_password = Column(String, nullable=True)
+    recipient_email = Column(String, nullable=True)
+    alerts_enabled = Column(Boolean, default=True)

@@ -12,8 +12,8 @@ def refresh_item_status(db, item):
     # Dynamic Horizon: Look ahead lead_time + buffer, min 14 days
     horizon = max(14, item.lead_time + 7)
     projections = calculate_projection(db, item, forecast_days=horizon)
-    run_alert_engine(db, item, projections)
     generate_recommendation(db, item, projections)
+    run_alert_engine(db, item, projections)
 
 def refresh_all_items_status(db):
     """

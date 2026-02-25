@@ -29,10 +29,11 @@ def get_projection(item_id: int, db: Session = Depends(get_db)):
 
     projections = calculate_projection(db, item)
 
+    # Run recommendation first to ensure email pulls fresh data
+    recommendation = generate_recommendation(db, item, projections)
+
     # Run alert engine on the full time-series
     run_alert_engine(db, item, projections)
-
-    recommendation = generate_recommendation(db, item, projections)
 
     return {
         "item": {

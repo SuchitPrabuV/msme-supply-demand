@@ -1,4 +1,4 @@
-from backend import models
+from backend import models, email_service
 from datetime import datetime
 
 
@@ -72,7 +72,13 @@ def run_alert_engine(db, item, projections):
 
         if not existing_shortage_alert:
             db.add(models.Alert(item_id=item.id, type="SHORTAGE", message=msg, severity="RED", status="ACTIVE", created_at=datetime.utcnow()))
+            # NEW: Trigger email for new Critical Risk
+            email_service.send_critical_alert_email(db, item.id, item.name, item.sku, msg)
         else:
+            # Upgrade from YELLOW to RED should also trigger an email
+            if existing_shortage_alert.severity != "RED":
+                email_service.send_critical_alert_email(db, item.id, item.name, item.sku, msg)
+                
             existing_shortage_alert.severity = "RED"
             existing_shortage_alert.message = msg
         db.commit()

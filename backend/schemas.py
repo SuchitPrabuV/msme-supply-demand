@@ -124,3 +124,15 @@ class SimulationInput(BaseModel):
     additional_demand: int = 0      # Add/subtract units from daily demand
     additional_supply: int = 0      # Add units to daily supply (e.g. from other business)
     supply_delay_days: int = 0      # e.g. +2 days for all supply
+# -------- SETTINGS --------
+class SettingsBase(BaseModel):
+    sender_email: Optional[str] = None
+    app_password: Optional[str] = None
+    recipient_email: Optional[str] = None
+    alerts_enabled: bool = True
+
+class SettingsResponse(SettingsBase):
+    id: int
+
+    class Config:
+        from_attributes = True

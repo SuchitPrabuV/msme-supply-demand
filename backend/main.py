@@ -18,6 +18,7 @@ from backend.routers.simulation import router as simulation_router
 from backend.routers.orders import router as orders_router
 from backend.routers.production import router as production_router
 from backend.routers.export import router as export_router
+from backend.routers.settings import router as settings_router
 from backend.engine import calculate_projection
 
 
@@ -44,6 +45,7 @@ app.include_router(simulation_router)
 app.include_router(orders_router)
 app.include_router(production_router)
 app.include_router(export_router)
+app.include_router(settings_router)
 
 
 # ✅ THEN define routes
@@ -178,4 +180,18 @@ def supply_orders_view(request: Request):
     return templates.TemplateResponse(
         "supply_orders.html",
         {"request": request, "orders": orders, "items": items}
+    )
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_view(request: Request):
+    db = SessionLocal()
+    settings = db.query(models.Settings).first()
+    if not settings:
+        settings = models.Settings(sender_email="", app_password="", recipient_email="", alerts_enabled=True)
+        db.add(settings)
+        db.commit()
+    db.close()
+    return templates.TemplateResponse(
+        "settings.html",
+        {"request": request, "settings": settings}
     )

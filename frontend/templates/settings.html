@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white p-3">
+                <h4 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Automation Settings</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted mb-4">Configure Gmail automation to receive real-time critical stockout alerts via
+                    email.</p>
+
+                <form id="settingsForm">
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="alerts_enabled" {% if
+                                settings.alerts_enabled %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="alerts_enabled">Enable Gmail Alerts</label>
+                        </div>
+                        <small class="text-muted">When enabled, the system will automatically send an email whenever a
+                            CRITICAL stockout risk is detected.</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Sender Gmail Address</label>
+                            <input type="email" class="form-control" id="sender_email"
+                                value="{{ settings.sender_email or '' }}" placeholder="your-email@gmail.com">
+                            <small class="text-muted">Gmail account used to send the alerts.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Gmail App Password</label>
+                            <input type="password" class="form-control" id="app_password"
+                                value="{{ settings.app_password or '' }}" placeholder="•••• •••• •••• ••••">
+                            <small class="text-info"><i class="bi bi-info-circle me-1"></i>Must be a 16-character App
+                                Password.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Recipient Email Address</label>
+                        <input type="email" class="form-control" id="recipient_email"
+                            value="{{ settings.recipient_email or '' }}" placeholder="owner@example.com">
+                        <small class="text-muted">The email address that will receive the critical alerts.</small>
+                    </div>
+
+                    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                        <div>
+                            <strong>How to get an App Password?</strong><br>
+                            1. Go to your Google Account Settings.<br>
+                            2. Enable 2-Step Verification.<br>
+                            3. Search for "App Passwords" and create one for "Mail".
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" onclick="saveSettings()">
+                            <i class="bi bi-save me-2"></i>Save Configuration
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-lg" onclick="testEmail()">
+                            <i class="bi bi-send me-2"></i>Send Test Email
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function saveSettings() {
+        const data = {
+            sender_email: document.getElementById('sender_email').value,
+            app_password: document.getElementById('app_password').value,
+            recipient_email: document.getElementById('recipient_email').value,
+            alerts_enabled: document.getElementById('alerts_enabled').checked
+        };
+
+        const res = await fetch('/api/settings/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            alert("Settings saved successfully!");
+            location.reload();
+        } else {
+            alert("Failed to save settings.");
+        }
+    }
+
+    async function testEmail() {
+        // First save to make sure we test current values
+        const data = {
+            sender_email: document.getElementById('sender_email').value,
+            app_password: document.getElementById('app_password').value,
+            recipient_email: document.getElementById('recipient_email').value,
+            alerts_enabled: document.getElementById('alerts_enabled').checked
+        };
+
+        const saveRes = await fetch('/api/settings/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!saveRes.ok) {
+            alert("Failed to save settings before testing.");
+            return;
+        }
+
+        const testRes = await fetch('/api/settings/test-email', { method: 'POST' });
+        const result = await testRes.json();
+
+        if (testRes.ok) {
+            alert("Test email sent! Please check your inbox (and spam folder).");
+        } else {
+            alert("Error: " + (result.detail || "Failed to send test email."));
+        }
+    }
+</script>
+{% endblock %}
