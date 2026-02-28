@@ -1,0 +1,19 @@
+SKU: ITEM005
+Name: Fasteners
+Current Stock: 40
+Safety Stock: 20
+
+Projections (First 5 days):
+Day 0 (2026-02-28): Stock 40, Demand 0, Supply 0
+Day 1 (2026-03-01): Stock 40, Demand 0, Supply 0
+Day 2 (2026-03-02): Stock 40, Demand 0, Supply 0
+Day 3 (2026-03-03): Stock 40, Demand 0, Supply 0
+Day 4 (2026-03-04): Stock 40, Demand 0, Supply 0
+
+Existing Pending Recommendation:
+Qty: 40
+Rationale: To restore inventory buffer to target levels. Targeting 3.0x safety stock buffer.
+
+Re-generating recommendation...
+New/Updated Recommendation Qty: 20
+Rationale: To restore inventory buffer to target levels. Targeting 3.0x safety stock.

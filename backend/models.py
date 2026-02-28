@@ -3,6 +3,19 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, date
 from backend.database import Base
 
+class Supplier(Base):
+    __tablename__ = "suppliers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    contact_email = Column(String, nullable=True)
+    lead_time_days = Column(Integer, default=7)
+    reliability_score = Column(Float, default=1.0)
+
+    # Relationships
+    items = relationship("Item", back_populates="supplier")
+
+
 # -----------------------------
 # ITEMS TABLE
 # -----------------------------
@@ -29,7 +42,11 @@ class Item(Base):
     machine_capacity = Column(Float, default=100.0) # units per day
     shift_capacity = Column(Float, default=8.0) # hours per shift
 
+    # Supplier Link
+    supplier_id = Column(Integer, ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+
     # Relationships
+    supplier = relationship("Supplier", back_populates="items")
     demand_orders = relationship("DemandOrder", back_populates="item", cascade="all, delete-orphan")
     supply_orders = relationship("SupplyOrder", back_populates="item", cascade="all, delete-orphan")
     production_runs = relationship("ProductionRun", back_populates="item", cascade="all, delete-orphan")
@@ -80,6 +97,7 @@ class SupplyOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
     supplier_name = Column(String, nullable=True)
     quantity = Column(Integer, nullable=False)
     order_date = Column(Date, nullable=False)
@@ -88,6 +106,7 @@ class SupplyOrder(Base):
     followed_up = Column(Boolean, default=False)
 
     item = relationship("Item", back_populates="supply_orders")
+    supplier = relationship("Supplier")
 
 
 class ProductionRun(Base):

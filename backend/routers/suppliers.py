@@ -43,3 +43,19 @@ def create_supplier(data: SupplierCreate, db: Session = Depends(get_db)):
 @router.get("/")
 def get_suppliers(db: Session = Depends(get_db)):
     return db.query(models.Supplier).all()
+
+
+@router.delete("/{supplier_id}")
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db)):
+    supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Check if any items are using this supplier
+    item_count = db.query(models.Item).filter(models.Item.supplier_id == supplier_id).count()
+    if item_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete supplier: {item_count} items are linked to it.")
+
+    db.delete(supplier)
+    db.commit()
+    return {"message": "Supplier deleted successfully"}

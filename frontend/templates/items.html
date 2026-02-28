@@ -32,6 +32,15 @@
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" id="add-name" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier</label>
+                        <select id="add-supplier-id" class="form-select">
+                            <option value="">No Supplier</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}">{{ s.id }} - {{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Current Stock</label>
@@ -59,6 +68,7 @@
             <tr>
                 <th>SKU</th>
                 <th>Name</th>
+                <th>Supplier</th>
                 <th>Current Stock</th>
                 <th>Safety Stock</th>
                 <th>Action</th>
@@ -69,13 +79,16 @@
             <tr id="item-row-{{ item.id }}">
                 <td>{{ item.sku }}</td>
                 <td>{{ item.name }}</td>
+                <td>{{ item.supplier.name if item.supplier else 'None' }}</td>
                 <td>{{ item.current_stock }}</td>
                 <td>{{ item.safety_stock }}</td>
                 <td>
                     <div class="btn-group">
-                        <a href="/items-view" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                            data-bs-target="#editModal"
-                            onclick="populateModal('{{ item.id }}', '{{ item.sku }}', '{{ item.name }}', '{{ item.current_stock }}', '{{ item.safety_stock }}')">
+                        <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                            data-bs-target="#editModal" data-id="{{ item.id }}" data-sku="{{ item.sku }}"
+                            data-name="{{ item.name }}" data-stock="{{ item.current_stock }}"
+                            data-safety="{{ item.safety_stock }}" data-supplier-id="{{ item.supplier_id or '' }}"
+                            onclick="populateModal(this)">
                             Edit
                         </a>
                         <button class="btn btn-sm btn-outline-danger" hx-delete="/items/{{ item.id }}"
@@ -114,6 +127,15 @@
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" id="edit-name">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier</label>
+                        <select id="edit-supplier-id" class="form-select">
+                            <option value="">No Supplier</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}">{{ s.id }} - {{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Current Stock</label>
@@ -135,21 +157,24 @@
 </div>
 
 <script>
-    function populateModal(id, sku, name, stock, safety) {
-        document.getElementById('edit-id').value = id;
-        document.getElementById('edit-sku').value = sku;
-        document.getElementById('edit-name').value = name;
-        document.getElementById('edit-stock').value = stock;
-        document.getElementById('edit-safety').value = safety;
+    function populateModal(btn) {
+        document.getElementById('edit-id').value = btn.dataset.id;
+        document.getElementById('edit-sku').value = btn.dataset.sku;
+        document.getElementById('edit-name').value = btn.dataset.name;
+        document.getElementById('edit-stock').value = btn.dataset.stock;
+        document.getElementById('edit-safety').value = btn.dataset.safety;
+        document.getElementById('edit-supplier-id').value = btn.dataset.supplierId || "";
     }
 
     async function saveItem() {
         const id = document.getElementById('edit-id').value;
+        const supplierId = document.getElementById('edit-supplier-id').value;
         const data = {
             sku: document.getElementById('edit-sku').value,
             name: document.getElementById('edit-name').value,
             current_stock: parseInt(document.getElementById('edit-stock').value),
-            safety_stock: parseInt(document.getElementById('edit-safety').value)
+            safety_stock: parseInt(document.getElementById('edit-safety').value),
+            supplier_id: supplierId ? parseInt(supplierId) : null
         };
 
         const response = await fetch(`/items/${id}`, {
@@ -165,11 +190,13 @@
         }
     }
     async function addItem() {
+        const supplierId = document.getElementById('add-supplier-id').value;
         const data = {
             sku: document.getElementById('add-sku').value.toUpperCase(),
             name: document.getElementById('add-name').value,
             current_stock: parseInt(document.getElementById('add-stock').value),
-            safety_stock: parseInt(document.getElementById('add-safety').value)
+            safety_stock: parseInt(document.getElementById('add-safety').value),
+            supplier_id: supplierId ? parseInt(supplierId) : null
         };
 
         const response = await fetch('/items/', {

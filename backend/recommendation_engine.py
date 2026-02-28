@@ -6,13 +6,15 @@ def generate_recommendation(db, item, projections):
     Analyzes projections and recommends a replenishment quantity if needed.
     """
 
-    # Hardcoded Logic: Use 3.0x safety stock as trigger and target
-    target_stock = item.safety_stock * 3.0
-    warning_threshold = item.safety_stock * 3.0 # Trigger as soon as we drop below 3x
+    # Logic: Multipliers from DB are treated as TOTAL target level (e.g. 3.0x safety stock)
+    # We use the reorder_target_multiplier as both trigger and target to ensure the '3x alert' requirement
+    target_stock = item.safety_stock * (item.reorder_target_multiplier or 3.0)
+    warning_threshold = target_stock 
+    
     horizon_stock = projections[-1]["projected_stock"] if projections else item.current_stock
 
     # Resolution Logic: 
-    # Resolve if current stock is healthy (>= 3x) AND horizon reaches target (>= 3x)
+    # Resolve if current stock is healthy (>= warning) AND horizon reaches target (>= target)
     
     # 1. Find min stock in the horizon
     min_stock = item.current_stock
@@ -41,7 +43,7 @@ def generate_recommendation(db, item, projections):
         models.DemandOrder.quantity > item.current_stock
     ).first()
 
-    # TRIGGER Logic: Do not generate a NEW recommendation if we are still at or above 3x
+    # TRIGGER Logic: Do not generate a NEW recommendation if we are still at or above threshold
     # Unless there is an unfillable demand order
     existing_rec = db.query(models.Recommendation).filter(
         models.Recommendation.item_id == item.id,
@@ -50,15 +52,15 @@ def generate_recommendation(db, item, projections):
 
     if not unfillable_demand and min_stock >= warning_threshold:
         if existing_rec:
-            # If it was existing but we are now at/above 3x, resolve it
+            # If it was existing but we are now at/above threshold, resolve it
             existing_rec.status = "RESOLVED"
             db.commit()
         return None
 
-    # Calculate required quantity to reach 3x target
+    # Calculate required quantity to reach target
     required_quantity = max(0, target_stock - min_stock)
 
-    # Respect minimum order qty (hardcoded to 1 if we removed UI for it, but model still has it)
+    # Respect minimum order qty
     final_rec_qty = max(required_quantity, item.min_order_qty or 1)
 
     # ... (rest of logic remains same, just using hardcoded 3.0)
@@ -91,10 +93,10 @@ def generate_recommendation(db, item, projections):
         final_rec_qty = 0 
     elif stockout_date:
         rationale = f"To cover a stockout risk on {stockout_date.strftime('%d-%m-%Y')}. "
-        rationale += "Targeting 3.0x safety stock."
+        rationale += f"Targeting {item.reorder_target_multiplier or 3.0}x safety stock."
     else:
         rationale = "To restore inventory buffer to target levels. "
-        rationale += "Targeting 3.0x safety stock."
+        rationale += f"Targeting {item.reorder_target_multiplier or 3.0}x safety stock."
 
     if unfillable_demand:
         rationale += " | Missing stock for demand order(s)"

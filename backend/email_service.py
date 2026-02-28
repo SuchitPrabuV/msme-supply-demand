@@ -73,3 +73,85 @@ def send_critical_alert_email(db: Session, item_id: int, item_name: str, sku: st
     except Exception as e:
         print(f"Failed to send email: {e}")
         return False
+
+def send_po_email(db: Session, supply_order_id: int):
+    """
+    Sends a professional Purchase Order email to the supplier.
+    """
+    order = db.query(models.SupplyOrder).filter(models.SupplyOrder.id == supply_order_id).first()
+    if not order or not order.item:
+        return False
+
+    # Try to find the supplier linked to the item or by name
+    supplier = order.item.supplier
+    if not supplier:
+        # Fallback to searching by name if the link is missing
+        supplier = db.query(models.Supplier).filter(models.Supplier.name == order.supplier_name).first()
+
+    if not supplier or not supplier.contact_email:
+        print(f"No contact email for supplier: {order.supplier_name}. Skipping PO email.")
+        return False
+
+    settings = db.query(models.Settings).first()
+    if not settings or not settings.sender_email or not settings.app_password:
+        print("Gmail settings incomplete. Skipping PO email.")
+        return False
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = settings.sender_email
+        msg['To'] = supplier.contact_email
+        msg['Subject'] = f"PURCHASE ORDER: PO-{order.id} for {order.item.sku}"
+
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;">
+                <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Purchase Order</h2>
+                <p>Dear <strong>{supplier.name}</strong>,</p>
+                <p>Please find the details for our recent purchase order:</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">PO Number</th>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">PO-{order.id}</td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Item</th>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{order.item.name} ({order.item.sku})</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Quantity</th>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{order.quantity} units</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Order Date</th>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{order.order_date.strftime('%d-%m-%Y')}</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Expected Delivery</th>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{order.expected_delivery_date.strftime('%d-%m-%Y')}</td>
+                    </tr>
+                </table>
+
+                <p style="margin-top: 20px;">Please confirm receipt of this order and the expected delivery date.</p>
+                
+                <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.85em; color: #777;">
+                    <p>Sent via <strong>Pulse MSME Control Tower</strong></p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(settings.sender_email, settings.app_password)
+            server.send_message(msg)
+            
+        print(f"PO email sent to {supplier.name} ({supplier.contact_email})")
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send PO email: {e}")
+        return False

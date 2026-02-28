@@ -27,16 +27,22 @@
                 <form id="addSupplyForm">
                     <div class="mb-3">
                         <label class="form-label">Product / SKU</label>
-                        <select id="add-supply-item-id" class="form-select" required>
+                        <select id="add-supply-item-id" class="form-select" required onchange="onItemSelect()">
                             <option value="" selected disabled>Select SKU...</option>
                             {% for item in items %}
-                            <option value="{{ item.id }}">{{ item.sku }} - {{ item.name }}</option>
+                            <option value="{{ item.id }}"
+                                data-supplier-name="{{ item.supplier.name if item.supplier else '' }}"
+                                data-supplier-id="{{ item.supplier_id or '' }}"
+                                data-lead-time="{{ item.supplier.lead_time_days if item.supplier else item.lead_time or 7 }}">
+                                {{ item.sku }} - {{ item.name }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Supplier Name</label>
                         <input type="text" class="form-control" id="add-supply-name" required>
+                        <input type="hidden" id="add-supply-supplier-id">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Quantity</label>
@@ -44,7 +50,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Order Date</label>
-                        <input type="date" class="form-control" id="add-supply-order-date" required>
+                        <input type="date" class="form-control" id="add-supply-order-date" required
+                            onchange="calculateDeliveryDate()">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Expected Delivery</label>
@@ -226,6 +233,42 @@
 </div>
 
 <script>
+    function onItemSelect() {
+        const select = document.getElementById('add-supply-item-id');
+        const selectedOption = select.options[select.selectedIndex];
+
+        const supplierName = selectedOption.getAttribute('data-supplier-name');
+        const supplierId = selectedOption.getAttribute('data-supplier-id');
+        const leadTime = parseInt(selectedOption.getAttribute('data-lead-time') || "7");
+
+        // Auto-fill supplier name and hidden id
+        document.getElementById('add-supply-name').value = supplierName;
+        document.getElementById('add-supply-supplier-id').value = supplierId || "";
+
+        // Calculate expected delivery date
+        calculateDeliveryDate(leadTime);
+    }
+
+    function calculateDeliveryDate(leadTime = null) {
+        const orderDateInput = document.getElementById('add-supply-order-date');
+        const deliveryDateInput = document.getElementById('add-supply-delivery-date');
+
+        if (!orderDateInput.value) return;
+
+        if (leadTime === null) {
+            const select = document.getElementById('add-supply-item-id');
+            if (select.selectedIndex <= 0) return; // No item selected
+            const selectedOption = select.options[select.selectedIndex];
+            leadTime = parseInt(selectedOption.getAttribute('data-lead-time') || "7");
+        }
+
+        const orderDate = new Date(orderDateInput.value);
+        const deliveryDate = new Date(orderDate);
+        deliveryDate.setDate(orderDate.getDate() + leadTime);
+
+        deliveryDateInput.value = deliveryDate.toISOString().split('T')[0];
+    }
+
     function populateSupplyModal(id, name, qty, order_date, delivery_date) {
         document.getElementById('edit-supply-id').value = id;
         document.getElementById('edit-supply-name').value = name;
@@ -257,8 +300,10 @@
     }
 
     async function addSupplyOrder() {
+        const supplierId = document.getElementById('add-supply-supplier-id').value;
         const data = {
             item_id: parseInt(document.getElementById('add-supply-item-id').value),
+            supplier_id: supplierId ? parseInt(supplierId) : null,
             supplier_name: document.getElementById('add-supply-name').value,
             quantity: parseInt(document.getElementById('add-supply-qty').value),
             order_date: document.getElementById('add-supply-order-date').value,

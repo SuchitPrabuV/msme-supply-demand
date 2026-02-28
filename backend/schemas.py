@@ -3,6 +3,22 @@ from typing import Optional
 from datetime import date
 from pydantic import BaseModel
 
+# -------- SUPPLIER SCHEMAS --------
+class SupplierBase(BaseModel):
+    name: str
+    contact_email: Optional[str] = None
+    lead_time_days: int = 7
+    reliability_score: float = 1.0
+
+class SupplierCreate(SupplierBase):
+    pass
+
+class SupplierResponse(SupplierBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
 # -------- ITEM CREATE --------
 class ItemCreate(BaseModel):
     sku: str
@@ -17,6 +33,7 @@ class ItemCreate(BaseModel):
     lead_time: int = 7
     warning_multiplier: float = 1.5
     reorder_target_multiplier: float = 2.0
+    supplier_id: Optional[int] = None
 
 
 # -------- ITEM RESPONSE --------
@@ -87,6 +104,7 @@ class ItemUpdate(BaseModel):
     lead_time: Optional[int] = None
     warning_multiplier: Optional[float] = None
     reorder_target_multiplier: Optional[float] = None
+    supplier_id: Optional[int] = None
 
 # -------- DEMAND UPDATE --------
 class DemandOrderUpdate(BaseModel):

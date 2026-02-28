@@ -54,6 +54,9 @@
                     <a class="nav-link text-white" href="/api/production/view">Production Runs</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link text-white" href="/suppliers-view">Suppliers</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link text-white" href="/settings">Settings</a>
                 </li>
             </ul>
@@ -212,14 +215,15 @@
 
     <div id="chatbot-container">
         <div class="chat-header">
-            <span>🤖 Supply Assistant</span>
+            <span>Pulse Supply Assistant</span>
             <button onclick="toggleChatbot()">&times;</button>
         </div>
         <div id="chatbot-messages">
-            <div class="chat-bubble chat-bot">👋 Hello! I am your supply chain assistant.<br><br>Try asking me
+            <div class="chat-bubble chat-bot">Hello! I am your supply chain assistant.<br><br>Try asking me
                 about:<br>• 📦 <strong>Supply Orders</strong><br>• 🛍️ <strong>Demand Orders</strong><br>• 🏭
                 <strong>Inventory / Stock</strong><br>• ⚙️ <strong>Production Runs</strong><br>• 🚨 <strong>Active
-                    Alerts</strong><br>• 💡 <strong>Recommendations</strong></div>
+                    Alerts</strong><br>• 💡 <strong>Recommendations</strong>
+            </div>
         </div>
         <div class="chat-input-area">
             <input type="text" id="chatbot-input" placeholder="Ask me something..."
